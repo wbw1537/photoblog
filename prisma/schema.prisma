@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum for photo file status
+enum PhotoFileStatus {
+  Main
+  Sub
+}
+
+// User model
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  password  String
+  email     String   @unique
+  admin     Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos Photo[]
+}
+
+// Photo model
+model Photo {
+  id              String    @id @default(cuid())
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String
+  title           String
+  description     String?
+  liked           Boolean   @default(false)
+  iso             Int?
+  exposureTime    String?
+  fNumber         Float?
+  cameraMake      String?
+  cameraModel     String?
+  lensMake        String?
+  lensModel       String?
+  focalLength     Float?
+  focalLength35mm Float?
+  dateTaken       DateTime?
+  timeZone        String?
+  gpsLatitude     Float?
+  gpsLongitude    Float?
+  gpsTimestamp    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  isDeleted       Boolean   @default(false)
+
+  files PhotoFile[]
+}
+
+// Photo file model
+model PhotoFile {
+  id               String          @id @default(cuid())
+  photo            Photo           @relation(fields: [photoId], references: [id])
+  photoId          String
+  fileName         String
+  fileType         String
+  filePath         String
+  fileSize         Int
+  fileModifiedTime DateTime?
+  fileAccessDate   DateTime?
+  status           PhotoFileStatus @default(Main)
+  imageHeight      Int
+  imageWidth       Int
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  isDeleted        Boolean         @default(false)
+}
