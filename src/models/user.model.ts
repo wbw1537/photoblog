@@ -37,7 +37,7 @@ export class User {
     name: string, 
     password: string, 
     email: string, 
-    admin: boolean, 
+    admin: boolean = false, 
     photos: Photo[] = []): User {
     return new User(name, password, email, admin, photos);
   }

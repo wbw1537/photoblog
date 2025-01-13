@@ -1,6 +1,7 @@
 import express, { Application, Request, Response } from 'express';
 
-import photoScanRouter from './routes/photo-scan';
+import photoScanRouter from './routes/photo-scan.router.js';
+import userRouter from './routes/user.router.js';
 
 const app: Application = express();
 
@@ -10,7 +11,9 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Welcome to my TypeScript Express.js app!');
 });
 
-app.use('/', photoScanRouter); // Mount the photoScanRouter under the "/api" namespace
+app.use('/', photoScanRouter);
+
+app.use('/', userRouter);
 
 // Handle unknown routes (404 handler)
 app.use((req: Request, res: Response) => {
