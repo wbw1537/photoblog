@@ -6,6 +6,7 @@ export class User {
   password: string;
   email: string;
   admin: boolean;
+  basePath?: string;
   createdAt?: Date;
   updatedAt?: Date;
   photos: Photo[];
@@ -17,6 +18,7 @@ export class User {
     admin: boolean,
     photos: Photo[],
     id?: string,
+    basePath?: string,
     createdAt?: Date,
     updatedAt?: Date
   ) {
@@ -25,6 +27,7 @@ export class User {
     this.password = password;
     this.email = email;
     this.admin = admin;
+    this.basePath = basePath;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
     this.photos = photos;
@@ -51,6 +54,7 @@ export class User {
     password: string;
     email: string;
     admin: boolean;
+    basePath: string;
     createdAt: Date;
     updatedAt: Date;
     photos: Photo[];
@@ -62,6 +66,7 @@ export class User {
       data.admin,
       data.photos,
       data.id,
+      data.basePath,
       data.createdAt,
       data.updatedAt
     );

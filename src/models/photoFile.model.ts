@@ -4,6 +4,7 @@ export class PhotoFile {
   fileName: string;
   fileType: string;
   filePath: string;
+  fileHash: string;
   fileSize: number;
   fileModifiedTime?: Date;
   fileAccessDate?: Date;
@@ -20,6 +21,7 @@ export class PhotoFile {
     fileName: string,
     fileType: string,
     filePath: string,
+    fileHash: string,
     fileSize: number,
     fileModifiedTime: Date | undefined,
     fileAccessDate: Date | undefined,
@@ -35,6 +37,7 @@ export class PhotoFile {
     this.fileName = fileName;
     this.fileType = fileType;
     this.filePath = filePath;
+    this.fileHash = fileHash;
     this.fileSize = fileSize;
     this.fileModifiedTime = fileModifiedTime;
     this.fileAccessDate = fileAccessDate;
