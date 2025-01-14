@@ -21,7 +21,7 @@ app.use((req: Request, res: Response) => {
 });
 
 // Centralized error-handling middleware (optional for catching errors globally)
-app.use((error: any, req: Request, res: Response, next: Function) => {
+app.use((error: Error, req: Request, res: Response, next: Function) => {
   console.error(error); // Log the error
   res.status(500).json({ error: 'Internal Server Error' });
 });

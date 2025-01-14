@@ -1,10 +1,8 @@
 import { PrismaClient } from '@prisma/client/extension';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 
 import { User } from '../models/user.model.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
+import { generateToken } from '../utils/jwt.util.js';
 
 export class UserService {
   private prisma: PrismaClient;
@@ -38,10 +36,6 @@ export class UserService {
     if (!passwordMatch) {
       throw new Error('Invalid password');
     }
-
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, {
-      expiresIn: '1h'
-    });
-    return token;
+    return generateToken(user.id, user.email);
   }
 }
