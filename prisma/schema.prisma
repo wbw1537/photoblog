@@ -12,8 +12,8 @@ datasource db {
 
 // Enum for photo file status
 enum PhotoFileStatus {
-  Main
-  Sub
+  Source
+  Offshoot
 }
 
 // User model
@@ -72,7 +72,7 @@ model PhotoFile {
   fileSize         Int
   fileModifiedTime DateTime?
   fileAccessDate   DateTime?
-  status           PhotoFileStatus @default(Main)
+  status           PhotoFileStatus @default(Source)
   imageHeight      Int
   imageWidth       Int
   createdAt        DateTime        @default(now())
