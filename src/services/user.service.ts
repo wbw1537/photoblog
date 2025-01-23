@@ -1,34 +1,32 @@
-import { PrismaClient } from '@prisma/client/extension';
+import { PrismaClient, User } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
-import { User } from '../models/user.model.js';
+import { CreateUserDTO } from '../models/user.model.js';
 import { generateToken } from '../utils/jwt.util.js';
+import { UserRepository } from '../repositories/user.repository.js';
 
 export class UserService {
   private prisma: PrismaClient;
+  private userRepository: UserRepository
 
-  constructor(prisma: PrismaClient) {
+  constructor(prisma: PrismaClient, userRepository: UserRepository) {
     this.prisma = prisma;
+    this.userRepository = userRepository;
   }
 
-  async register(user: User) {
+  async register(user: CreateUserDTO): Promise<User> {
     const hashedPassword = await bcrypt.hash(user.password, 10);
-    const newUser = await this.prisma.user.create({
-      data: {
-        name: user.name,
-        password: hashedPassword,
-        email: user.email,
-      }
-    });
-    return newUser;
+    user.password = hashedPassword;
+    try {
+      const newUser = await this.userRepository.create(user);
+      return newUser;
+    } catch (error) {
+      throw new Error('Error while creating user');
+    }
   }
 
-  async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: email
-      }
-    });
+  async login(email: string, password: string): Promise<string> {
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new Error('User not found');
     }

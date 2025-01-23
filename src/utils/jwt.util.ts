@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 
-import { User } from '../models/user.model.js';
+import { User } from '@prisma/client';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'jwt_secret';
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
