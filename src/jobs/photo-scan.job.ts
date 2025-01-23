@@ -35,7 +35,7 @@ export class PhotoScanJob {
     if (!user) {
       throw new Error('User not found');
     }
-    this.scanStatusService.initializeJob(user.id, jobId);
+    this.scanStatusService.initializeScanJob(user.id, jobId);
     
     // Compare with paths
     const photoFilesMap = new Map<string, PhotoFile>();
@@ -64,7 +64,7 @@ export class PhotoScanJob {
     );
     
     // Update job status
-    this.scanStatusService.completeJob(user.id);
+    this.scanStatusService.completeScanJob(user.id);
     this.logger.info(`Completed photo scan job. UserId: ${userId}, JobId: ${jobId}`);
   }
 
@@ -75,7 +75,7 @@ export class PhotoScanJob {
       `Not matched: ${photoScanDiffs.notMatchedPhotoFilesMap.size}, ` +
       `Matched: ${photoScanDiffs.matchedPhotoFilesMap.size}`
     );
-    this.scanStatusService.setJobInProgress(
+    this.scanStatusService.setScanJobInProgress(
       userId,
       photoScanDiffs.increased.length,
       photoScanDiffs.notMatchedPhotoFilesMap.size,
@@ -148,7 +148,7 @@ export class PhotoScanJob {
           this.logger.debug(`Found hash match for ${filePath} -> ${matchedPhotoFile.filePath}`);
           await this.photoFileRepository.updateFilePathById(matchedPhotoFile.id, filePath);
           notMatched.delete(matchedPhotoFile.filePath);
-          this.scanStatusService.updateInProgressJob(user.id, UpdateJobStatusType.NOT_MATCHED_MATCHED_WITH_INCREASED);
+          this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.NOT_MATCHED_MATCHED_WITH_INCREASED);
           continue;
         }
 
@@ -165,7 +165,7 @@ export class PhotoScanJob {
       try {
         this.logger.debug(`Deleting photo file: ${photoFile.filePath}`);
         await this.deleteNotMatchedPhotos(user, photoFile);
-        this.scanStatusService.updateInProgressJob(user.id, UpdateJobStatusType.NOT_MATCHED_DELETED);
+        this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.NOT_MATCHED_DELETED);
       } catch (error) {
         this.logger.error(`Failed to delete photo file ${photoFile.filePath}:`, error);
       }
@@ -184,7 +184,7 @@ export class PhotoScanJob {
         if (photoFile.fileHash !== tags.ImageDataHash) {
           this.logger.debug(`Updating changed file: ${photoFile.filePath}`);
           await this.updatePhotoAndFile(photoFile, tags);
-          this.scanStatusService.updateInProgressJob(user.id, UpdateJobStatusType.MATCHED_UPDATED);
+          this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.MATCHED_UPDATED);
         }
       } catch (error) {
         this.logger.error(`Failed to process matched file ${photoFile.filePath}:`, error);
@@ -203,7 +203,7 @@ export class PhotoScanJob {
         }
       };
       await this.photoRepository.create(photo);
-      this.scanStatusService.updateInProgressJob(user.id, UpdateJobStatusType.INCREASED_SCANNED);
+      this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.INCREASED_SCANNED);
     } catch (error) {
       throw error;
     }

@@ -23,7 +23,7 @@ export class PhotoScanService {
   }
 
   private checkJobStatus(userId: string): string {
-    const scanJob = this.scanStatusService.getJob(userId);
+    const scanJob = this.scanStatusService.getScanStatus(userId);
     if (scanJob && scanJob.status !== JobStatusType.COMPLETED) {
       throw new Error('Scan job already in progress');
     }

@@ -2,6 +2,7 @@ import express, { Application, Request, Response } from 'express';
 
 import photoScanRouter from './routes/photo-scan.router.js';
 import userRouter from './routes/user.router.js';
+import scanStatusRouter from './routes/scan-status.router.js';
 
 const app: Application = express();
 
@@ -14,6 +15,8 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/', photoScanRouter);
 
 app.use('/', userRouter);
+
+app.use('/', scanStatusRouter);
 
 // Handle unknown routes (404 handler)
 app.use((req: Request, res: Response) => {

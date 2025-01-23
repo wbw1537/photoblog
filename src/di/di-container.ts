@@ -13,6 +13,7 @@ import { UserService } from '../services/user.service.js';
 
 import { UserController } from '../controllers/user.controller.js';
 import { PhotoScanController } from '../controllers/photo-scan.controller.js';
+import { ScanStatusController } from '../controllers/scan-status.controller.js';
 
 // Logger instance
 log4js.configure({
@@ -41,6 +42,7 @@ const userService = new UserService(prismaClient, userRepository);
 // Controller layer instances
 const userController = new UserController(userService);
 const photoScanController = new PhotoScanController(photoScanService);
+const scanStatusController = new ScanStatusController(scanStatusService);
 
 // Export all initialized instances
-export { userController, photoScanController };
+export { userController, photoScanController, scanStatusController };

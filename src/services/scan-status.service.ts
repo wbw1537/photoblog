@@ -26,7 +26,7 @@ export interface ScanStatus {
 export class ScanStatusService {
   private scanStatus = new Map<string, ScanStatus>();
 
-  initializeJob(userId: string, jobId: string): void {
+  initializeScanJob(userId: string, jobId: string): void {
     this.scanStatus.set(userId, {
       jobId,
       status: JobStatusType.INITIALIZING,
@@ -40,7 +40,7 @@ export class ScanStatusService {
     });
   }
 
-  setJobInProgress(userId: string, photosIncreased: number, photosNotMatched: number, photosMatched: number): void {
+  setScanJobInProgress(userId: string, photosIncreased: number, photosNotMatched: number, photosMatched: number): void {
     const status = this.scanStatus.get(userId);
     if (!status) {
       throw new Error('Job not found');
@@ -51,7 +51,7 @@ export class ScanStatusService {
     status.photosMatched = photosMatched;
   }
 
-  updateInProgressJob(userId: string, updateJobStatusType: UpdateJobStatusType): void {
+  updateInProgressScanJob(userId: string, updateJobStatusType: UpdateJobStatusType): void {
     const status = this.scanStatus.get(userId);
     if (!status) {
       throw new Error('Job not found');
@@ -72,7 +72,7 @@ export class ScanStatusService {
     }
   }
 
-  completeJob(userId: string): void {
+  completeScanJob(userId: string): void {
     const status = this.scanStatus.get(userId);
     if (!status) {
       throw new Error('Job not found');
@@ -80,7 +80,7 @@ export class ScanStatusService {
     status.status = JobStatusType.COMPLETED;
   }
 
-  getJob(userId: string): ScanStatus | undefined {
+  getScanStatus(userId: string): ScanStatus | undefined {
     return this.scanStatus.get(userId);
   }
 
