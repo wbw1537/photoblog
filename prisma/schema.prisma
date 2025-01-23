@@ -12,8 +12,8 @@ datasource db {
 
 // Enum for photo file status
 enum PhotoFileStatus {
-  Main
-  Sub
+  Source
+  Offshoot
 }
 
 // User model
@@ -23,6 +23,8 @@ model User {
   password  String
   email     String   @unique
   admin     Boolean  @default(false)
+  basePath  String
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -65,11 +67,12 @@ model PhotoFile {
   photoId          String
   fileName         String
   fileType         String
-  filePath         String
+  filePath         String          @unique
+  fileHash         String          
   fileSize         Int
   fileModifiedTime DateTime?
   fileAccessDate   DateTime?
-  status           PhotoFileStatus @default(Main)
+  status           PhotoFileStatus @default(Source)
   imageHeight      Int
   imageWidth       Int
   createdAt        DateTime        @default(now())
