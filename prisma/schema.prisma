@@ -16,19 +16,32 @@ enum PhotoFileStatus {
   Offshoot
 }
 
+// Enum for blog type
+enum BlogType {
+  Article
+  PhotoPost
+}
+
+// Enum for media type
+enum MediaType {
+  Photo
+  PhotoFile
+}
+
 // User model
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  password  String
-  email     String   @unique
-  admin     Boolean  @default(false)
-  basePath  String
+  id       String  @id @default(cuid())
+  name     String
+  password String
+  email    String  @unique
+  admin    Boolean @default(false)
+  basePath String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   photos Photo[]
+  blogs  Blog[]
 }
 
 // Photo model
@@ -55,9 +68,9 @@ model Photo {
   gpsTimestamp    DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  isDeleted       Boolean   @default(false)
 
   files PhotoFile[]
+  tags  PhotoTag[]
 }
 
 // Photo file model
@@ -68,7 +81,7 @@ model PhotoFile {
   fileName         String
   fileType         String
   filePath         String          @unique
-  fileHash         String          
+  fileHash         String
   fileSize         Int
   fileModifiedTime DateTime?
   fileAccessDate   DateTime?
@@ -77,5 +90,63 @@ model PhotoFile {
   imageWidth       Int
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
-  isDeleted        Boolean         @default(false)
+}
+
+// Blog model
+model Blog {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  title     String
+  content   String
+  blogType  BlogType
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isDeleted Boolean  @default(false)
+
+  blogMedia BlogMedia[]
+  tags      BlogTag[]
+}
+
+// Blog media model
+model BlogMedia {
+  id            String    @id @default(cuid())
+  blog          Blog      @relation(fields: [blogId], references: [id])
+  blogId        String
+  mediaType     MediaType
+  mediaId       String
+  mediaPosition Int
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Tag model
+model Tag {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos PhotoTag[]
+  blogs  BlogTag[]
+}
+
+// Photo tag model
+model PhotoTag {
+  photo   Photo  @relation(fields: [photoId], references: [id])
+  photoId String
+  tag     Tag    @relation(fields: [tagId], references: [id])
+  tagId   String
+
+  @@id([photoId, tagId])
+}
+
+// Blog tag model
+model BlogTag {
+  blog   Blog   @relation(fields: [blogId], references: [id])
+  blogId String
+  tag    Tag    @relation(fields: [tagId], references: [id])
+  tagId  String
+
+  @@id([blogId, tagId])
 }
