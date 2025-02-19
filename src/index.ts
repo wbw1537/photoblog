@@ -1,8 +1,11 @@
 import express, { Application, Request, Response } from 'express';
+import { errorHandler } from './middleware/error-handler.middleware.js';
 
 import photoScanRouter from './routes/photo-scan.router.js';
 import userRouter from './routes/user.router.js';
 import scanStatusRouter from './routes/scan-status.router.js';
+import blogRouter from './routes/blog.router.js';
+import tagRouter from './routes/tag.router.js';
 
 const app: Application = express();
 
@@ -13,10 +16,10 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.use('/', photoScanRouter);
-
 app.use('/', userRouter);
-
 app.use('/', scanStatusRouter);
+app.use('/', blogRouter);
+app.use('/', tagRouter);
 
 // Handle unknown routes (404 handler)
 app.use((req: Request, res: Response) => {
@@ -24,9 +27,8 @@ app.use((req: Request, res: Response) => {
 });
 
 // Centralized error-handling middleware (optional for catching errors globally)
-app.use((error: Error, req: Request, res: Response, next: Function) => {
-  console.error(error); // Log the error
-  res.status(500).json({ error: 'Internal Server Error' });
+app.use((error: Error, req: Request, res: Response) => {
+  errorHandler(error, req, res); 
 });
 
 // Start the server

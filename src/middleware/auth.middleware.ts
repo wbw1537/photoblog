@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import asyncHandler from 'express-async-handler';
+import log4js from 'log4js';
 
 import { verifyToken } from '../utils/jwt.util.js';
+
+const logger = log4js.getLogger();
 
 export const authenticate = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
@@ -12,10 +15,11 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
       req.body.user = user;
       next();
     } catch (error) {
-      res.status(401).json({ message: 'JWT failed' });
+      logger.error('JWT verification failed:', error);
+      res.status(401).json({ message: 'JWT token invalid' });
     }
   } else {
-    console.error("No authorization provided");
+    logger.error("No authorization provided");
     res.status(401).json({ message: 'Not authorized' });
   }
 });

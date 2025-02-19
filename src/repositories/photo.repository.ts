@@ -1,6 +1,4 @@
-import { PrismaClient, Prisma } from "@prisma/client";
-
-import { Photo } from "@prisma/client";
+import { PrismaClient, Prisma, Photo } from "@prisma/client";
 
 export class PhotoRepository {
   private prismaClient: PrismaClient;

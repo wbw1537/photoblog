@@ -19,7 +19,7 @@ Run the app
 Check lint
 
   ```sh
-  npm lint
+  npm run lint
   ```
 
 Prisma migration after model change

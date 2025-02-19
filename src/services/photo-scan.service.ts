@@ -3,6 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { JobStatusType, ScanStatusService } from "./scan-status.service.js";
 import { PhotoScanJob } from "../jobs/photo-scan.job.js";
 
+import { PhotoBlogError } from '../errors/photoblog.error.js';
+
 export class PhotoScanService {
   constructor(
     private scanStatusService: ScanStatusService,
@@ -25,7 +27,7 @@ export class PhotoScanService {
   private checkJobStatus(userId: string): string {
     const scanJob = this.scanStatusService.getScanStatus(userId);
     if (scanJob && scanJob.status !== JobStatusType.COMPLETED) {
-      throw new Error('Scan job already in progress');
+      throw new PhotoBlogError('Scan job already in progress', 409);
     }
     return uuidv4();
   }
