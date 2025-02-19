@@ -1,4 +1,4 @@
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 import { CreateUserDTO } from "../models/user.model.js";
 
@@ -19,11 +19,8 @@ export class UserRepository {
       where: { id },
       include: {
         photos: {
-          where: { isDeleted: false },
           include: {
-            files: {
-              where: { isDeleted: false }
-            }
+            files: true,
           }
         }
       },

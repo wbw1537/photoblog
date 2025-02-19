@@ -11,4 +11,12 @@ export class BlogRepository {
       data: blog
     });
   }
+
+  async findById(id: string) {
+    return await this.prismaClient.blog.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
 }

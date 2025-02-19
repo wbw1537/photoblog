@@ -1,11 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-import { ExifDateTime, ExifTool } from 'exiftool-vendored';
+import { ExifDateTime, ExifTool, Tags } from 'exiftool-vendored';
 import { PhotoFile, Prisma, User, PhotoFileStatus } from '@prisma/client';
 import { Logger } from 'log4js';
 
-import { ScanStatusService, ScanStatus, JobStatusType, UpdateJobStatusType } from '../services/scan-status.service.js';
+import { ScanStatusService, UpdateJobStatusType } from '../services/scan-status.service.js';
 import { PhotoRepository } from '../repositories/photo.repository.js';
 import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { UserRepository } from '../repositories/user.repository.js';
@@ -192,7 +192,7 @@ export class PhotoScanJob {
     }
   }
 
-  private async createNewPhotoWithFile(user: User, filePath: string, tags: any): Promise<void> {
+  private async createNewPhotoWithFile(user: User, filePath: string, tags: Tags): Promise<void> {
     try {
       const photo: Prisma.PhotoCreateInput = {
         user: { connect: { id: user.id } },
@@ -205,11 +205,12 @@ export class PhotoScanJob {
       await this.photoRepository.create(photo);
       this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.INCREASED_SCANNED);
     } catch (error) {
+      this.logger.error(`Failed to create photo with file ${filePath}:`, error);
       throw error;
     }
   }
 
-  private async updatePhotoAndFile(photoFile: PhotoFile, tags: any): Promise<void> {
+  private async updatePhotoAndFile(photoFile: PhotoFile, tags: Tags): Promise<void> {
     if (photoFile.status === PhotoFileStatus.Source) {
       const photo = await this.photoRepository.findById(photoFile.photoId);
       if (photo) {
@@ -225,7 +226,7 @@ export class PhotoScanJob {
     await this.photoFileRepository.update(photoFile);
   }
 
-  private extractPhotoMetadata(tags: any) {
+  private extractPhotoMetadata(tags: Tags) {
     return {
       iso: tags.ISO,
       exposureTime: tags.ExposureTime,
@@ -246,7 +247,7 @@ export class PhotoScanJob {
     };
   }
 
-  private extractFileMetadata(filePath: string, tags: any) {
+  private extractFileMetadata(filePath: string, tags: Tags) {
     return {
       fileName: path.basename(filePath),
       fileType: filePath.split('.').pop() || '',
@@ -263,7 +264,7 @@ export class PhotoScanJob {
   private async findHashMatchedPhotoFile(
     hash: string,
     notMatchedPhotoFilesMap: Map<string, PhotoFile>): Promise<PhotoFile | null> {
-    for (const [filePath, photoFile] of notMatchedPhotoFilesMap) {
+    for (const [ ,photoFile] of notMatchedPhotoFilesMap) {
       if (photoFile.fileHash === hash) {
         return photoFile;
       }

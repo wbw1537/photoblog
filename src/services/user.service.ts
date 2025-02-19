@@ -1,18 +1,17 @@
-import { PrismaClient, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import bcrypt from 'bcrypt';
+import { Logger } from 'log4js';
+
 
 import { CreateUserDTO } from '../models/user.model.js';
 import { generateToken } from '../utils/jwt.util.js';
 import { UserRepository } from '../repositories/user.repository.js';
 
 export class UserService {
-  private prisma: PrismaClient;
-  private userRepository: UserRepository
-
-  constructor(prisma: PrismaClient, userRepository: UserRepository) {
-    this.prisma = prisma;
-    this.userRepository = userRepository;
-  }
+  constructor(
+    private userRepository: UserRepository,
+    private logger: Logger
+  ) { }
 
   async register(user: CreateUserDTO): Promise<User> {
     const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -21,6 +20,7 @@ export class UserService {
       const newUser = await this.userRepository.create(user);
       return newUser;
     } catch (error) {
+      this.logger.error(error);
       throw new Error('Error while creating user');
     }
   }

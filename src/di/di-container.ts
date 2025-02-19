@@ -5,6 +5,7 @@ import { UserRepository } from '../repositories/user.repository.js';
 import { PhotoRepository } from '../repositories/photo.repository.js';
 import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { BlogRepository } from '../repositories/blog.repository.js';
+import { TagRepository } from '../repositories/tag.repository.js';
 
 import { PhotoScanJob } from '../jobs/photo-scan.job.js';
 
@@ -12,11 +13,13 @@ import { PhotoScanService } from '../services/photo-scan.service.js';
 import { ScanStatusService } from '../services/scan-status.service.js';
 import { UserService } from '../services/user.service.js';
 import { BlogService } from '../services/blog.service.js';
+import { TagService } from '../services/tag.service.js';
 
 import { UserController } from '../controllers/user.controller.js';
 import { PhotoScanController } from '../controllers/photo-scan.controller.js';
 import { ScanStatusController } from '../controllers/scan-status.controller.js';
 import { BlogController } from '../controllers/blog.controller.js';
+import { TagController } from '../controllers/tag.controller.js';
 
 // Logger instance
 log4js.configure({
@@ -33,6 +36,7 @@ const userRepository = new UserRepository(prismaClient);
 const photoRepository = new PhotoRepository(prismaClient);
 const photoFileRepository = new PhotoFileRepository(prismaClient);
 const blogRepository = new BlogRepository(prismaClient)
+const tagRepository = new TagRepository(prismaClient);
 
 const scanStatusService = new ScanStatusService();
 
@@ -41,19 +45,23 @@ const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFile
 
 // Service layer instances
 const photoScanService = new PhotoScanService(scanStatusService, photoScanJob);
-const userService = new UserService(prismaClient, userRepository);
+const userService = new UserService(userRepository, logger);
 const blogService = new BlogService(blogRepository);
+const tagService = new TagService(tagRepository, photoRepository, blogRepository);
 
 // Controller layer instances
 const userController = new UserController(userService);
 const photoScanController = new PhotoScanController(photoScanService);
 const scanStatusController = new ScanStatusController(scanStatusService);
 const blogController = new BlogController(blogService)
+const tagController = new TagController(tagService);
+
 
 // Export all initialized instances
 export {
   userController,
   photoScanController,
   scanStatusController,
-  blogController
+  blogController,
+  tagController,
 };
