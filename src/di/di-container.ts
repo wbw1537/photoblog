@@ -45,7 +45,7 @@ const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFile
 
 // Service layer instances
 const photoScanService = new PhotoScanService(scanStatusService, photoScanJob);
-const userService = new UserService(userRepository, logger);
+const userService = new UserService(userRepository);
 const blogService = new BlogService(blogRepository);
 const tagService = new TagService(tagRepository, photoRepository, blogRepository);
 

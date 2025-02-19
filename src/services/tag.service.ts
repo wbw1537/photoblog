@@ -3,6 +3,8 @@ import { CreateTagDTO } from "../models/tag.model.js";
 import { PhotoRepository } from "../repositories/photo.repository.js";
 import { BlogRepository } from "../repositories/blog.repository.js";
 
+import { PhotoBlogError } from "../errors/photoblog.error.js";
+
 export class TagService {
   constructor(
     private tagRepository: TagRepository,
@@ -16,23 +18,27 @@ export class TagService {
     resourceId: string
   ): Promise<void> {
     switch (resourceType) {
-      case "photo": {
+      case "Media": {
         const photo = await this.photoRepository.findById(resourceId);
-        if (!photo || photo.userId !== userId) {
-          throw new Error("Unauthorized access for the photo");
+        if (!photo) {
+          throw new PhotoBlogError("Photo not found", 404);
+        } else if (photo.userId !== userId) {
+          throw new PhotoBlogError("Unauthorized access for the photo", 403);
         }
         break;
       }
 
       case "blog": {
         const blog = await this.blogRepository.findById(resourceId);
-        if (!blog || blog.userId !== userId) {
-          throw new Error("Unauthorized access for the blog");
+        if (!blog) {
+          throw new PhotoBlogError("Blog not found", 404);
+        } else if (blog.userId !== userId) {
+          throw new PhotoBlogError("Unauthorized access for the blog", 403);
         }
         break;
       }
       default:
-        throw new Error("Invalid resource type");
+        throw new PhotoBlogError("Invalid resource type", 400);
     }
   }
 

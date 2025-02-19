@@ -1,3 +1,5 @@
+import { PhotoBlogError } from "../errors/photoblog.error";
+
 export enum JobStatusType {
   INITIALIZING = 'initializing',
   IN_PROGRESS = 'in_progress',
@@ -43,7 +45,7 @@ export class ScanStatusService {
   setScanJobInProgress(userId: string, photosIncreased: number, photosNotMatched: number, photosMatched: number): void {
     const status = this.scanStatus.get(userId);
     if (!status) {
-      throw new Error('Job not found');
+      throw new PhotoBlogError('Job not found', 404);
     }
     status.status = JobStatusType.IN_PROGRESS;
     status.photosIncreased = photosIncreased;
@@ -54,7 +56,7 @@ export class ScanStatusService {
   updateInProgressScanJob(userId: string, updateJobStatusType: UpdateJobStatusType): void {
     const status = this.scanStatus.get(userId);
     if (!status) {
-      throw new Error('Job not found');
+      throw new PhotoBlogError('Job not found', 404);
     }
     switch (updateJobStatusType) {
       case UpdateJobStatusType.INCREASED_SCANNED:
@@ -75,7 +77,7 @@ export class ScanStatusService {
   completeScanJob(userId: string): void {
     const status = this.scanStatus.get(userId);
     if (!status) {
-      throw new Error('Job not found');
+      throw new PhotoBlogError('Job not found', 404);
     }
     status.status = JobStatusType.COMPLETED;
   }

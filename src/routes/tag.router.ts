@@ -5,8 +5,8 @@ import { tagController } from '../di/di-container.js';
 
 const tagRouter = express.Router();
 
-tagRouter.post('/v1/tags', authenticate, (req, res) => tagController.addTag(req, res));
-tagRouter.put('/v1/tags', authenticate, (req, res) => tagController.updateTag(req, res));
-tagRouter.delete('/v1/tags', authenticate, (req, res) => tagController.deleteTag(req, res));
+tagRouter.post('/v1/tags', authenticate, (req, res, next) => tagController.addTag(req, res, next));
+tagRouter.put('/v1/tags', authenticate, (req, res, next) => tagController.updateTag(req, res, next));
+tagRouter.delete('/v1/tags', authenticate, (req, res, next) => tagController.deleteTag(req, res, next));
 
 export default tagRouter;

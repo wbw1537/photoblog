@@ -1,4 +1,5 @@
 import express, { Application, Request, Response } from 'express';
+import { errorHandler } from './middleware/error-handler.middleware.js';
 
 import photoScanRouter from './routes/photo-scan.router.js';
 import userRouter from './routes/user.router.js';
@@ -27,8 +28,7 @@ app.use((req: Request, res: Response) => {
 
 // Centralized error-handling middleware (optional for catching errors globally)
 app.use((error: Error, req: Request, res: Response) => {
-  console.error(error); // Log the error
-  res.status(500).json({ error: 'Internal Server Error' });
+  errorHandler(error, req, res); 
 });
 
 // Start the server

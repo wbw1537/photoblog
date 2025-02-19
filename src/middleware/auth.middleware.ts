@@ -16,7 +16,7 @@ export const authenticate = asyncHandler(async (req: Request, res: Response, nex
       next();
     } catch (error) {
       logger.error('JWT verification failed:', error);
-      res.status(401).json({ message: 'JWT failed' });
+      res.status(401).json({ message: 'JWT token invalid' });
     }
   } else {
     logger.error("No authorization provided");

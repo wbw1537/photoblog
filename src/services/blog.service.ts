@@ -2,6 +2,7 @@ import { BlogType, MediaType, Prisma } from "@prisma/client";
 
 import { CreateBlogDTO } from "../models/blog.model.js";
 import { BlogRepository } from "../repositories/blog.repository.js";
+import { PhotoBlogError } from "../errors/photoblog.error.js";
 
 export class BlogService {
   constructor(
@@ -18,7 +19,7 @@ export class BlogService {
     // Check if the blogType instance of BlogType
     const blogType = blogCreateInput.blogType;
     if (!(blogType in BlogType)) {
-      throw new Error("Invalid blog type");
+      throw new PhotoBlogError("Invalid blog type", 400);
     } else {
       blogCreateInput.blogType = blogType;
     }
@@ -26,7 +27,7 @@ export class BlogService {
     const blogMedia = blogCreateInput.blogMedia;
     blogMedia.forEach((media) => {
       if (!(media.mediaType in MediaType)) {
-        throw new Error("Invalid media type");
+        throw new PhotoBlogError("Invalid media type", 400);
       }
     });
     return {

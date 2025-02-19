@@ -10,6 +10,8 @@ import { PhotoRepository } from '../repositories/photo.repository.js';
 import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { UserRepository } from '../repositories/user.repository.js';
 
+import { PhotoBlogError } from '../errors/photoblog.error.js';
+
 interface PhotoScanDiffs {
   // Photo files in database but not in file system
   notMatchedPhotoFilesMap: Map<string, PhotoFile>;
@@ -33,7 +35,7 @@ export class PhotoScanJob {
     this.logger.info(`Starting photo scan job. UserId: ${userId}, JobId: ${jobId}, DeltaScan: ${isDeltaScan}`);
     const user = await this.userRepository.findAllById(userId);
     if (!user) {
-      throw new Error('User not found');
+      throw new PhotoBlogError('User not found', 404);
     }
     this.scanStatusService.initializeScanJob(user.id, jobId);
     
