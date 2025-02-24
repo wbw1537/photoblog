@@ -12,10 +12,10 @@ export class BlogRepository {
     });
   }
 
-  async findById(id: string) {
+  async findByIdAndUserId(id: string, userId: string) {
     return await this.prismaClient.blog.findUnique({
       where: {
-        id,
+        id, userId
       },
     });
   }
