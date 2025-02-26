@@ -38,7 +38,7 @@ export class PhotoScanJob {
       throw new PhotoBlogError('User not found', 404);
     }
     this.scanStatusService.initializeScanJob(user.id, jobId);
-    
+
     // Compare with paths
     const photoFilesMap = new Map<string, PhotoFile>();
 
@@ -64,7 +64,7 @@ export class PhotoScanJob {
       photoScanDiffs.matchedPhotoFilesMap,
       isDeltaScan
     );
-    
+
     // Update job status
     this.scanStatusService.completeScanJob(user.id);
     this.logger.info(`Completed photo scan job. UserId: ${userId}, JobId: ${jobId}`);
@@ -231,7 +231,8 @@ export class PhotoScanJob {
   private extractPhotoMetadata(tags: Tags) {
     return {
       iso: tags.ISO,
-      exposureTime: tags.ExposureTime,
+      exposureTime: this.convertExposureTime(tags.ExposureTime?.toString()),
+      exposureTimeValue: tags.ExposureTime?.toString(),
       fNumber: tags.FNumber,
       cameraMake: tags.Make,
       cameraModel: tags.Model,
@@ -247,6 +248,30 @@ export class PhotoScanJob {
       gpsTimestamp: tags.GPSTimeStamp instanceof ExifDateTime
         ? tags.GPSTimeStamp.toDate() : null,
     };
+  }
+
+  private convertExposureTime(exposureTime?: string): number | undefined {
+    if (!exposureTime) {
+      return undefined;
+    }
+    if (exposureTime.includes('/')) {
+      const parts = exposureTime.split('/');
+      const numerator = parseInt(parts[0], 10);
+      const denominator = parseInt(parts[1], 10);
+
+      if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+        return numerator / denominator;
+      } else {
+        throw new PhotoBlogError("Invalid fraction format or division by zero!", 400);
+      }
+    } else {
+      const number = parseInt(exposureTime, 10);
+      if (!isNaN(number)) {
+        return number;
+      } else {
+        throw new PhotoBlogError("Invalid number format!", 400);
+      }
+    }
   }
 
   private extractFileMetadata(filePath: string, tags: Tags) {
@@ -266,7 +291,7 @@ export class PhotoScanJob {
   private async findHashMatchedPhotoFile(
     hash: string,
     notMatchedPhotoFilesMap: Map<string, PhotoFile>): Promise<PhotoFile | null> {
-    for (const [ ,photoFile] of notMatchedPhotoFilesMap) {
+    for (const [, photoFile] of notMatchedPhotoFilesMap) {
       if (photoFile.fileHash === hash) {
         return photoFile;
       }

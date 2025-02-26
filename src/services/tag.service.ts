@@ -18,12 +18,12 @@ export class TagService {
     resourceId: string
   ): Promise<void> {
     switch (resourceType) {
-      case "Media": {
+      case "photo": {
         const photo = await this.photoRepository.findById(resourceId);
         if (!photo) {
           throw new PhotoBlogError("Photo not found", 404);
         } else if (photo.userId !== userId) {
-          throw new PhotoBlogError("Unauthorized access for the photo", 403);
+          throw new PhotoBlogError("Unauthorized", 403);
         }
         break;
       }
@@ -33,7 +33,7 @@ export class TagService {
         if (!blog) {
           throw new PhotoBlogError("Blog not found", 404);
         } else if (blog.userId !== userId) {
-          throw new PhotoBlogError("Unauthorized access for the blog", 403);
+          throw new PhotoBlogError("Unauthorized", 403);
         }
         break;
       }

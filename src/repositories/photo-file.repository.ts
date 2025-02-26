@@ -6,6 +6,17 @@ export class PhotoFileRepository {
   ) {
   }
 
+  async findById(id: string) {
+    return await this.prismaClient.photoFile.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        photo: true,
+      }
+    });
+  }
+
   async getFileMapByUserId(userId: string): Promise<Map<string, PhotoFile>> {
     const files = await this.prismaClient.photoFile.findMany({
       where: {

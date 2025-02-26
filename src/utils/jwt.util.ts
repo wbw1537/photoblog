@@ -5,8 +5,8 @@ import { User } from '@prisma/client';
 const JWT_SECRET = process.env.JWT_SECRET || 'jwt_secret';
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '1h';
 
-export function generateToken(id: string, email: string) {
-  return jwt.sign({ id, email }, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
+export function generateToken(id: string, email: string, basePath: string): string {
+  return jwt.sign({ id, email, basePath }, JWT_SECRET, { expiresIn: JWT_EXPIRATION });
 };
 
 export function verifyToken(token: string): User {

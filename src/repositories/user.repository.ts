@@ -33,6 +33,13 @@ export class UserRepository {
     });
   }
 
+  async getBasePathById(id: string) {
+    return await this.prismaClient.user.findUnique({
+      where: { id },
+      select: { basePath: true },
+    });
+  }
+
   async create(user: CreateUserDTO) {
     return await this.prismaClient.user.create({
       data: {

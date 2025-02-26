@@ -14,12 +14,16 @@ import { ScanStatusService } from '../services/scan-status.service.js';
 import { UserService } from '../services/user.service.js';
 import { BlogService } from '../services/blog.service.js';
 import { TagService } from '../services/tag.service.js';
+import { PhotoService } from '../services/photo.service.js';
+import { PhotoFileService } from '../services/photo-file.service.js';
 
 import { UserController } from '../controllers/user.controller.js';
 import { PhotoScanController } from '../controllers/photo-scan.controller.js';
 import { ScanStatusController } from '../controllers/scan-status.controller.js';
 import { BlogController } from '../controllers/blog.controller.js';
 import { TagController } from '../controllers/tag.controller.js';
+import { PhotoController } from '../controllers/photo.controller.js';
+import { PhotoFileController } from '../controllers/photo-file.controller.js';
 
 // Logger instance
 log4js.configure({
@@ -46,8 +50,10 @@ const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFile
 // Service layer instances
 const photoScanService = new PhotoScanService(scanStatusService, photoScanJob);
 const userService = new UserService(userRepository);
-const blogService = new BlogService(blogRepository);
+const blogService = new BlogService(blogRepository, tagRepository);
 const tagService = new TagService(tagRepository, photoRepository, blogRepository);
+const photoService = new PhotoService(photoRepository, tagRepository);
+const photoFileService = new PhotoFileService(photoFileRepository);
 
 // Controller layer instances
 const userController = new UserController(userService);
@@ -55,6 +61,8 @@ const photoScanController = new PhotoScanController(photoScanService);
 const scanStatusController = new ScanStatusController(scanStatusService);
 const blogController = new BlogController(blogService)
 const tagController = new TagController(tagService);
+const photoController = new PhotoController(photoService);
+const photoFileController = new PhotoFileController(photoFileService);
 
 
 // Export all initialized instances
@@ -64,4 +72,6 @@ export {
   scanStatusController,
   blogController,
   tagController,
+  photoController,
+  photoFileController
 };
