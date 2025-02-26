@@ -20,11 +20,13 @@ export class PhotoService {
   }
 
   async getPhotoById(userId: string, id: string) {
-    const photo = await this.photoRepository.findByIdAndUserId(id, userId);
-    if (photo.data === null) {
+    const photo = await this.photoRepository.findById(id);
+    if (!photo) {
       throw new PhotoBlogError("Photo not found", 404);
+    } else if (photo.userId !== userId) {
+      throw new PhotoBlogError("Unauthorized", 403);
     }
-    return photo;
+    return { data: photo };
   }
 
   async likePhoto(userId: string, photoId: string) {

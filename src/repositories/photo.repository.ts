@@ -7,22 +7,10 @@ export class PhotoRepository {
 
   async findById(id: string) {
     return await this.prismaClient.photo.findUnique({
-      where: { 
-        id,
-      },
-    });
-  }
-  
-  async findByIdAndUserId(id: string, userId: string) {
-    const query = await this.prismaClient.photo.findUnique({
       where: {
-        userId,
         id,
       },
     });
-    return {
-      data: query,
-    }
   }
 
   async findAllByFilter(skip: number, take: number, filter: Prisma.PhotoWhereInput) {
@@ -35,11 +23,8 @@ export class PhotoRepository {
             filter,
           ],
         },
-        include: {
-          files: true,
-          tags: {
-            include: { tag: true },
-          }
+        select: {
+          ...this.buildPhotoSelect()
         },
       }),
       this.prismaClient.photo.count({
@@ -50,7 +35,7 @@ export class PhotoRepository {
         },
       }),
     ]);
-  
+
     return {
       data: photos,
       pagination: {
@@ -105,5 +90,46 @@ export class PhotoRepository {
         },
       });
     });
+  }
+
+  private buildPhotoSelect() {
+    return {
+      id: true,
+      userId: true,
+      title: true,
+      description: true,
+      liked: true,
+      iso: true,
+      exposureTimeValue: true,
+      fNumber: true,
+      cameraMake: true,
+      cameraModel: true,
+      lensMake: true,
+      lensModel: true,
+      focalLength: true,
+      focalLength35mm: true,
+      dateTaken: true,
+      timeZone: true,
+      gpsLatitude: true,
+      gpsLongitude: true,
+      gpsTimestamp: true,
+      files: {
+        select: {
+          id: true,
+          fileName: true,
+          fileType: true,
+          filePath: true,
+          fileSize: true,
+          fileModifiedTime: true,
+          fileAccessDate: true,
+          status: true,
+          imageHeight: true,
+          imageWidth: true,
+        },
+      },
+      tags: {
+        include: { tag: { select: { name: true } } },
+      }
+    }
   }
 }
