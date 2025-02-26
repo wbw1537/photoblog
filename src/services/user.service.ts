@@ -29,6 +29,6 @@ export class UserService {
     if (!passwordMatch) {
       throw new PhotoBlogError('Login credential failed', 404);
     }
-    return generateToken(user.id, user.email);
+    return generateToken(user.id, user.email, user.basePath);
   }
 }
