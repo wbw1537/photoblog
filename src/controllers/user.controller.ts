@@ -24,8 +24,8 @@ export class UserController {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body;
-      const token = await this.userService.login(email, password);
-      res.status(200).json({ token });
+      const user = await this.userService.login(email, password);
+      res.status(200).json(user);
     } catch (err: unknown) {
       next(err);
     }
