@@ -28,15 +28,21 @@ enum MediaType {
   PhotoFile
 }
 
+// Enum for user type
+enum UserType {
+  Admin
+  Normal
+  Pending
+}
+
 // User model
 model User {
-  id       String  @id @default(cuid())
-  name     String
-  password String
-  email    String  @unique
-  admin    Boolean @default(false)
-  basePath String
-
+  id        String   @id @default(cuid())
+  name      String
+  password  String
+  email     String   @unique
+  type      UserType @default(Pending)
+  basePath  String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

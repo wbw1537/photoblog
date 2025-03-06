@@ -1,3 +1,5 @@
+import { UserType } from "@prisma/client";
+
 export interface CreateUserDTO {
   name: string;
   password: string;
@@ -9,10 +11,12 @@ export interface UserResponseDTO {
   id: string;
   name: string;
   email: string;
-  admin: boolean;
+  type: UserType;
   basePath: string;
 }
 
 export interface UserLoginResponseDTO extends UserResponseDTO {
   token: string;
 }
+
+export const placeholder = "**PLACEHOLDER**" as const;
