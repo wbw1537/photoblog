@@ -12,7 +12,6 @@ export class PhotoFileController {
   async getPhotoFileImageById(req: Request, res: Response, next: NextFunction) {
     try {
       const user = req.body.user;
-      console.log(user);
       const fileId = req.params.fileId;
       const resolution = req.query.resolution as FileResolution;
       if (!resolution) {

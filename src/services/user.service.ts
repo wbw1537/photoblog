@@ -1,11 +1,10 @@
 import bcrypt from 'bcrypt';
 
-import { CreateUserDTO, UserLoginResponseDTO, UserResponseDTO } from '../models/user.model.js';
-import { generateToken } from '../utils/jwt.util.js';
+import { CreateUserDTO, TokenResponseDTO, UserLoginResponseDTO, UserResponseDTO } from '../models/user.model.js';
+import { generateAccessToken, generateRefreshToken, shouldRenewRefreshToken, verifyToken } from '../utils/jwt.util.js';
 import { UserRepository } from '../repositories/user.repository.js';
 
 import { PhotoBlogError } from '../errors/photoblog.error.js';
-
 export class UserService {
   constructor(
     private userRepository: UserRepository
@@ -39,15 +38,49 @@ export class UserService {
     if (!passwordMatch) {
       throw new PhotoBlogError('Login credential failed', 403);
     }
-    const token = generateToken(user.id, user.email, user.basePath || '');
+
+    const accessToken = generateAccessToken(user.id, user.email, user.basePath || '');
+    const refreshToken = generateRefreshToken(user.id, user.email, user.basePath || '');
+
     const userResponse: UserLoginResponseDTO = {
       id: user.id,
       name: user.name,
       email: user.email,
       type: user.type,
       basePath: user.basePath,
-      token,
+      accessToken,
+      refreshToken,
     };
     return userResponse;
+  }
+
+  async getUserInfo(userId: string): Promise<UserResponseDTO> {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new PhotoBlogError('User not found', 404);
+    }
+    const userResponse: UserResponseDTO = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      type: user.type,
+      basePath: user.basePath,
+    };
+    return userResponse;
+  }
+
+  async refreshToken(refreshToken: string): Promise<TokenResponseDTO> {
+    const user = verifyToken(refreshToken);
+    const accessToken = generateAccessToken(user.id, user.email, user.basePath);
+    if (shouldRenewRefreshToken(refreshToken)) {
+      const newRefreshToken = generateRefreshToken(user.id, user.email, user.basePath);
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+      };
+    }
+    return {
+      accessToken,
+    };
   }
 }

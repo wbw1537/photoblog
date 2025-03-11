@@ -16,7 +16,19 @@ export interface UserResponseDTO {
 }
 
 export interface UserLoginResponseDTO extends UserResponseDTO {
+  accessToken: Token;
+  refreshToken: Token;
+}
+
+export interface Token {
   token: string;
+  expiresAt: number;
+  tokenType: string;
+}
+
+export interface TokenResponseDTO {
+  accessToken: Token;
+  refreshToken?: Token;
 }
 
 export const placeholder = "**PLACEHOLDER**" as const;
