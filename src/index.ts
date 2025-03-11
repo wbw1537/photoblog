@@ -1,5 +1,6 @@
 import express, { Application, Request, Response } from 'express';
 import { errorHandler } from './middleware/error-handler.middleware.js';
+import cors from 'cors';
 
 import photoScanRouter from './routes/photo-scan.router.js';
 import userRouter from './routes/user.router.js';
@@ -12,6 +13,8 @@ import photoFileRouter from './routes/photo-file.router.js';
 const app: Application = express();
 
 app.use(express.json());
+
+app.use(cors());
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Welcome to my TypeScript Express.js app!');
