@@ -77,10 +77,10 @@ export class ScanStatusService {
 
   setScanJobError(userId: string): void {
     const status = this.scanStatus.get(userId);
-    if (!status) {
-      throw new PhotoBlogError('Job not found', 404);
+    // If the status is not found, it means the job has not been initialized yet
+    if (status) {
+      status.status = JobStatusType.ERROR;
     }
-    status.status = JobStatusType.ERROR;
   }
 
   completeScanJob(userId: string): void {

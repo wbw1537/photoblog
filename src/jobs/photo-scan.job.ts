@@ -9,8 +9,10 @@ import { ScanStatusService, UpdateJobStatusType } from '../services/scan-status.
 import { PhotoRepository } from '../repositories/photo.repository.js';
 import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { UserRepository } from '../repositories/user.repository.js';
+import { ConvertPhotoJob } from './convert-photo.job.js';
 
 import { PhotoBlogError } from '../errors/photoblog.error.js';
+import { placeholder } from '../models/user.model.js';
 
 interface PhotoScanDiffs {
   // Photo files in database but not in file system
@@ -27,6 +29,7 @@ export class PhotoScanJob {
     private userRepository: UserRepository,
     private photoFileRepository: PhotoFileRepository,
     private scanStatusService: ScanStatusService,
+    private convertPhotoJob: ConvertPhotoJob,
     private logger: Logger,
   ) { }
 
@@ -36,6 +39,9 @@ export class PhotoScanJob {
       const user = await this.userRepository.findAllById(userId);
       if (!user) {
         throw new PhotoBlogError('User not found', 404);
+      }
+      if (user.basePath === placeholder || user.cachePath === placeholder) {
+        throw new PhotoBlogError('User base path or cache path not set', 400);
       }
       this.scanStatusService.initializeScanJob(user.id, jobId);
 
@@ -157,13 +163,20 @@ export class PhotoScanJob {
 
         if (matchedPhotoFile !== null) {
           this.logger.debug(`Found hash match for ${filePath} -> ${matchedPhotoFile.filePath}`);
-          await this.photoFileRepository.updateFilePathById(matchedPhotoFile.id, filePath);
+          await Promise.all([
+            this.photoFileRepository.updateFilePathById(matchedPhotoFile.id, filePath),
+            this.convertPhotoJob.convertToPreview(user, filePath)
+          ]);
           notMatched.delete(matchedPhotoFile.filePath);
           this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.NOT_MATCHED_MATCHED_WITH_INCREASED);
           continue;
         }
 
-        await this.createNewPhotoWithFile(user, filePath, tags);
+        await Promise.all([
+          this.createNewPhotoWithFile(user, filePath, tags),
+          this.convertPhotoJob.convertToPreview(user, filePath)
+        ]);
+
       } catch (error) {
         this.logger.error(`Failed to process increased file ${filePath}:`, error);
       }
@@ -175,7 +188,10 @@ export class PhotoScanJob {
     for (const [, photoFile] of notMatched) {
       try {
         this.logger.debug(`Deleting photo file: ${photoFile.filePath}`);
-        await this.deleteNotMatchedPhotos(user, photoFile);
+        await Promise.all([
+          this.deleteNotMatchedPhotos(user, photoFile),
+          this.convertPhotoJob.deletePreview(user, photoFile.filePath)
+        ]);
         this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.NOT_MATCHED_DELETED);
       } catch (error) {
         this.logger.error(`Failed to delete photo file ${photoFile.filePath}:`, error);
@@ -192,6 +208,7 @@ export class PhotoScanJob {
     for (const [, photoFile] of matched) {
       try {
         const tags = await exifTool.read(path.join(user.basePath, photoFile.filePath));
+        await this.convertPhotoJob.convertToPreview(user, photoFile.filePath)
         if (photoFile.fileHash !== tags.ImageDataHash) {
           this.logger.debug(`Updating changed file: ${photoFile.filePath}`);
           await this.updatePhotoAndFile(photoFile, tags);

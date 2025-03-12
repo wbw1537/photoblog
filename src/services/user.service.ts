@@ -40,8 +40,8 @@ export class UserService {
       throw new PhotoBlogError('Login credential failed', 403);
     }
 
-    const accessToken = generateAccessToken(user.id, user.email, user.basePath || '');
-    const refreshToken = generateRefreshToken(user.id, user.email, user.basePath || '');
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
     const userResponse: UserLoginResponseDTO = {
       id: user.id,
@@ -74,9 +74,9 @@ export class UserService {
 
   async refreshToken(refreshToken: string): Promise<TokenResponseDTO> {
     const user = verifyToken(refreshToken);
-    const accessToken = generateAccessToken(user.id, user.email, user.basePath);
+    const accessToken = generateAccessToken(user);
     if (shouldRenewRefreshToken(refreshToken)) {
-      const newRefreshToken = generateRefreshToken(user.id, user.email, user.basePath);
+      const newRefreshToken = generateRefreshToken(user);
       return {
         accessToken,
         refreshToken: newRefreshToken,

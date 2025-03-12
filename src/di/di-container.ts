@@ -7,6 +7,7 @@ import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { BlogRepository } from '../repositories/blog.repository.js';
 import { TagRepository } from '../repositories/tag.repository.js';
 
+import { ConvertPhotoJob } from '../jobs/convert-photo.job.js';
 import { PhotoScanJob } from '../jobs/photo-scan.job.js';
 
 import { PhotoScanService } from '../services/photo-scan.service.js';
@@ -45,7 +46,8 @@ const tagRepository = new TagRepository(prismaClient);
 const scanStatusService = new ScanStatusService();
 
 // Job layer instances
-const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFileRepository, scanStatusService, logger);
+const convertPhotoJob = new ConvertPhotoJob(logger);
+const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFileRepository, scanStatusService, convertPhotoJob, logger);
 
 // Service layer instances
 const photoScanService = new PhotoScanService(scanStatusService, photoScanJob);
