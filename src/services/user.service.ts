@@ -25,6 +25,7 @@ export class UserService {
       email: newUser.email,
       type: newUser.type,
       basePath: newUser.basePath,
+      cachePath: newUser.cachePath,
     };
     return userResponse;
   }
@@ -48,6 +49,7 @@ export class UserService {
       email: user.email,
       type: user.type,
       basePath: user.basePath,
+      cachePath: user.cachePath,
       accessToken,
       refreshToken,
     };
@@ -65,6 +67,7 @@ export class UserService {
       email: user.email,
       type: user.type,
       basePath: user.basePath,
+      cachePath: user.cachePath,
     };
     return userResponse;
   }

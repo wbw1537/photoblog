@@ -42,7 +42,8 @@ model User {
   password  String
   email     String   @unique
   type      UserType @default(Pending)
-  basePath  String
+  basePath  String   @default("**PLACEHOLDER**")
+  cachePath String   @default("**PLACEHOLDER**")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

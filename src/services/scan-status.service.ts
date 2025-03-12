@@ -4,6 +4,7 @@ export enum JobStatusType {
   INITIALIZING = 'initializing',
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
+  ERROR = 'error',
 }
 
 export enum UpdateJobStatusType {
@@ -72,6 +73,14 @@ export class ScanStatusService {
         status.photosMatchedUpdated += 1;
         break;
     }
+  }
+
+  setScanJobError(userId: string): void {
+    const status = this.scanStatus.get(userId);
+    if (!status) {
+      throw new PhotoBlogError('Job not found', 404);
+    }
+    status.status = JobStatusType.ERROR;
   }
 
   completeScanJob(userId: string): void {

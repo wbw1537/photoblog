@@ -26,7 +26,7 @@ export class PhotoScanService {
 
   private checkJobStatus(userId: string): string {
     const scanJob = this.scanStatusService.getScanStatus(userId);
-    if (scanJob && scanJob.status !== JobStatusType.COMPLETED) {
+    if (scanJob && (scanJob.status === JobStatusType.INITIALIZING || scanJob.status === JobStatusType.IN_PROGRESS)) {
       throw new PhotoBlogError('Scan job already in progress', 409);
     }
     return uuidv4();
