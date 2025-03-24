@@ -311,6 +311,7 @@ export class PhotoScanJob {
       fileAccessDate: tags.FileAccessDate instanceof ExifDateTime ? tags.FileAccessDate.toDate() : new Date(tags.FileAccessDate || Date.now()),
       imageHeight: tags.ImageHeight || 0,
       imageWidth: tags.ImageWidth || 0,
+      orientation: tags.Orientation || 0,
     };
   }
 

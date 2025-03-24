@@ -26,7 +26,7 @@ export class ConvertPhotoJob {
       await fs.mkdir(previewDir, { recursive: true });
       
       return new Promise<void>((resolve, reject) => {
-        exec(`magick "${fileFullPath}" -resize 1200x1200^ "${previewPhotoFullPath}"`, (error, stdout, stderr) => {
+        exec(`magick "${fileFullPath}" -auto-orient -resize 1200x1200^ "${previewPhotoFullPath}"`, (error, stdout, stderr) => {
           if (error) {
             this.logger.error(`Error converting image: ${error.message}`);
             reject(error);

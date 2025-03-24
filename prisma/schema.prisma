@@ -96,6 +96,7 @@ model PhotoFile {
   status           PhotoFileStatus @default(Source)
   imageHeight      Int
   imageWidth       Int
+  orientation      Int
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 }
