@@ -6,8 +6,15 @@ A photo management app integrated with blog.
 
 Install dependencies
 
+For node:
+
   ```sh
   npm ci
+  ```
+
+For ImageMagick:
+  ```sh
+  brew install imagemagick
   ```
 
 Run the app
