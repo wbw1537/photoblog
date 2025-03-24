@@ -14,8 +14,9 @@ const REFRESH_TOKEN_EXPIRATION = '14d'; // 2 weeks
 
 const RENEW_REFRESH_TOKEN_TIME_SLOT = 7 * 24 * 60 * 60 * 1000; // 7 days
 
-export function generateAccessToken(id: string, email: string, basePath: string): Token {
-  const token = jwt.sign({ id, email, basePath }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
+export function generateAccessToken(user: User): Token {
+  const { id, email, basePath, cachePath } = user;
+  const token = jwt.sign({ id, email, basePath, cachePath }, JWT_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRATION });
   const expiresAt = Date.now() + (30 * 60 * 1000);
   
   return {
@@ -25,8 +26,9 @@ export function generateAccessToken(id: string, email: string, basePath: string)
   };
 }
 
-export function generateRefreshToken(id: string, email: string, basePath: string): Token {
-  const token = jwt.sign({ id, email, basePath }, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
+export function generateRefreshToken(user: User): Token {
+  const { id, email, basePath, cachePath } = user;
+  const token = jwt.sign({ id, email, basePath, cachePath }, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRATION });
   const expiresAt = Date.now() + (14 * 24 * 60 * 60 * 1000);
   
   return {

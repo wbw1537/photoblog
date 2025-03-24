@@ -125,6 +125,7 @@ export class PhotoRepository {
           status: true,
           imageHeight: true,
           imageWidth: true,
+          orientation: true,
         },
       },
       tags: {

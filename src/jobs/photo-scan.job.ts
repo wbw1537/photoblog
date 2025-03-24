@@ -9,8 +9,10 @@ import { ScanStatusService, UpdateJobStatusType } from '../services/scan-status.
 import { PhotoRepository } from '../repositories/photo.repository.js';
 import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { UserRepository } from '../repositories/user.repository.js';
+import { ConvertPhotoJob } from './convert-photo.job.js';
 
 import { PhotoBlogError } from '../errors/photoblog.error.js';
+import { placeholder } from '../models/user.model.js';
 
 interface PhotoScanDiffs {
   // Photo files in database but not in file system
@@ -27,47 +29,55 @@ export class PhotoScanJob {
     private userRepository: UserRepository,
     private photoFileRepository: PhotoFileRepository,
     private scanStatusService: ScanStatusService,
+    private convertPhotoJob: ConvertPhotoJob,
     private logger: Logger,
-  ) {
+  ) { }
 
-  }
   async startPhotoScanJob(userId: string, jobId: string, isDeltaScan: boolean = true): Promise<void> {
-    this.logger.info(`Starting photo scan job. UserId: ${userId}, JobId: ${jobId}, DeltaScan: ${isDeltaScan}`);
-    const user = await this.userRepository.findAllById(userId);
-    if (!user) {
-      throw new PhotoBlogError('User not found', 404);
-    }
-    this.scanStatusService.initializeScanJob(user.id, jobId);
+    try {
+      this.logger.info(`Starting photo scan job. UserId: ${userId}, JobId: ${jobId}, DeltaScan: ${isDeltaScan}`);
+      const user = await this.userRepository.findAllById(userId);
+      if (!user) {
+        throw new PhotoBlogError('User not found', 404);
+      }
+      if (user.basePath === placeholder || user.cachePath === placeholder) {
+        throw new PhotoBlogError('User base path or cache path not set', 400);
+      }
+      this.scanStatusService.initializeScanJob(user.id, jobId);
 
-    // Compare with paths
-    const photoFilesMap = new Map<string, PhotoFile>();
+      // Compare with paths
+      const photoFilesMap = new Map<string, PhotoFile>();
 
-    user.photos.forEach(photo => {
-      photo.files.forEach((file: PhotoFile) => {
-        photoFilesMap.set(file.filePath, file);
+      user.photos.forEach(photo => {
+        photo.files.forEach((file: PhotoFile) => {
+          photoFilesMap.set(file.filePath, file);
+        });
       });
-    });
 
-    this.logger.info(`Found ${photoFilesMap.size} existing photos in database`);
+      this.logger.info(`Found ${photoFilesMap.size} existing photos in database`);
 
-    const photoScanDiffs: PhotoScanDiffs = {
-      notMatchedPhotoFilesMap: photoFilesMap,
-      matchedPhotoFilesMap: new Map<string, PhotoFile>(),
-      increased: [],
+      const photoScanDiffs: PhotoScanDiffs = {
+        notMatchedPhotoFilesMap: photoFilesMap,
+        matchedPhotoFilesMap: new Map<string, PhotoFile>(),
+        increased: [],
+      }
+      await this.getPhotoPathsAndCompare(user.id, user.basePath, photoScanDiffs)
+
+      // Scan files
+      await this.scanPhoto(user,
+        photoScanDiffs.increased,
+        photoScanDiffs.notMatchedPhotoFilesMap,
+        photoScanDiffs.matchedPhotoFilesMap,
+        isDeltaScan
+      );
+
+      // Update job status
+      this.scanStatusService.completeScanJob(user.id);
+      this.logger.info(`Completed photo scan job. UserId: ${userId}, JobId: ${jobId}`);
+    } catch (error) {
+      this.logger.error(`Failed to execute photo scan job. UserId: ${userId}, JobId: ${jobId}:`, error);
+      this.scanStatusService.setScanJobError(userId);
     }
-    await this.getPhotoPathsAndCompare(user.id, user.basePath, photoScanDiffs)
-
-    // Scan files
-    await this.scanPhoto(user,
-      photoScanDiffs.increased,
-      photoScanDiffs.notMatchedPhotoFilesMap,
-      photoScanDiffs.matchedPhotoFilesMap,
-      isDeltaScan
-    );
-
-    // Update job status
-    this.scanStatusService.completeScanJob(user.id);
-    this.logger.info(`Completed photo scan job. UserId: ${userId}, JobId: ${jobId}`);
   }
 
   private async getPhotoPathsAndCompare(userId: string, photoBasePath: string, photoScanDiffs: PhotoScanDiffs): Promise<void> {
@@ -85,17 +95,22 @@ export class PhotoScanJob {
   }
 
   private async walk(dir: string, photoBasePath: string, photoScanDiffs: PhotoScanDiffs): Promise<void> {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const filePath = entry.name;
-      const fullPath = path.join(dir, filePath);
-      if (entry.isDirectory()) {
-        await this.walk(fullPath, photoBasePath, photoScanDiffs);
-      } else {
-        // get relative path
-        const relativePath = path.relative(photoBasePath, fullPath);
-        this.comparePhotoFile(relativePath, photoScanDiffs);
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const filePath = entry.name;
+        const fullPath = path.join(dir, filePath);
+        if (entry.isDirectory()) {
+          await this.walk(fullPath, photoBasePath, photoScanDiffs);
+        } else {
+          // get relative path
+          const relativePath = path.relative(photoBasePath, fullPath);
+          this.comparePhotoFile(relativePath, photoScanDiffs);
+        }
       }
+    } catch (error) {
+      this.logger.error(`Error walking directory ${dir}:`, error);
+      throw error;
     }
   }
 
@@ -148,13 +163,20 @@ export class PhotoScanJob {
 
         if (matchedPhotoFile !== null) {
           this.logger.debug(`Found hash match for ${filePath} -> ${matchedPhotoFile.filePath}`);
-          await this.photoFileRepository.updateFilePathById(matchedPhotoFile.id, filePath);
+          await Promise.all([
+            this.photoFileRepository.updateFilePathById(matchedPhotoFile.id, filePath),
+            this.convertPhotoJob.convertToPreview(user, filePath)
+          ]);
           notMatched.delete(matchedPhotoFile.filePath);
           this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.NOT_MATCHED_MATCHED_WITH_INCREASED);
           continue;
         }
 
-        await this.createNewPhotoWithFile(user, filePath, tags);
+        await Promise.all([
+          this.createNewPhotoWithFile(user, filePath, tags),
+          this.convertPhotoJob.convertToPreview(user, filePath)
+        ]);
+
       } catch (error) {
         this.logger.error(`Failed to process increased file ${filePath}:`, error);
       }
@@ -166,7 +188,10 @@ export class PhotoScanJob {
     for (const [, photoFile] of notMatched) {
       try {
         this.logger.debug(`Deleting photo file: ${photoFile.filePath}`);
-        await this.deleteNotMatchedPhotos(user, photoFile);
+        await Promise.all([
+          this.deleteNotMatchedPhotos(user, photoFile),
+          this.convertPhotoJob.deletePreview(user, photoFile.filePath)
+        ]);
         this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.NOT_MATCHED_DELETED);
       } catch (error) {
         this.logger.error(`Failed to delete photo file ${photoFile.filePath}:`, error);
@@ -183,6 +208,7 @@ export class PhotoScanJob {
     for (const [, photoFile] of matched) {
       try {
         const tags = await exifTool.read(path.join(user.basePath, photoFile.filePath));
+        await this.convertPhotoJob.convertToPreview(user, photoFile.filePath)
         if (photoFile.fileHash !== tags.ImageDataHash) {
           this.logger.debug(`Updating changed file: ${photoFile.filePath}`);
           await this.updatePhotoAndFile(photoFile, tags);
@@ -285,6 +311,7 @@ export class PhotoScanJob {
       fileAccessDate: tags.FileAccessDate instanceof ExifDateTime ? tags.FileAccessDate.toDate() : new Date(tags.FileAccessDate || Date.now()),
       imageHeight: tags.ImageHeight || 0,
       imageWidth: tags.ImageWidth || 0,
+      orientation: tags.Orientation || 0,
     };
   }
 

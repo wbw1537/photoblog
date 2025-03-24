@@ -45,8 +45,7 @@ export class UserRepository {
       data: {
         name: user.name,
         password: user.password,
-        email: user.email,
-        basePath: user.basePath,
+        email: user.email
       },
     });
   }

@@ -25,6 +25,7 @@ export class UserService {
       email: newUser.email,
       type: newUser.type,
       basePath: newUser.basePath,
+      cachePath: newUser.cachePath,
     };
     return userResponse;
   }
@@ -39,8 +40,8 @@ export class UserService {
       throw new PhotoBlogError('Login credential failed', 403);
     }
 
-    const accessToken = generateAccessToken(user.id, user.email, user.basePath || '');
-    const refreshToken = generateRefreshToken(user.id, user.email, user.basePath || '');
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
     const userResponse: UserLoginResponseDTO = {
       id: user.id,
@@ -48,6 +49,7 @@ export class UserService {
       email: user.email,
       type: user.type,
       basePath: user.basePath,
+      cachePath: user.cachePath,
       accessToken,
       refreshToken,
     };
@@ -65,15 +67,16 @@ export class UserService {
       email: user.email,
       type: user.type,
       basePath: user.basePath,
+      cachePath: user.cachePath,
     };
     return userResponse;
   }
 
   async refreshToken(refreshToken: string): Promise<TokenResponseDTO> {
     const user = verifyToken(refreshToken);
-    const accessToken = generateAccessToken(user.id, user.email, user.basePath);
+    const accessToken = generateAccessToken(user);
     if (shouldRenewRefreshToken(refreshToken)) {
-      const newRefreshToken = generateRefreshToken(user.id, user.email, user.basePath);
+      const newRefreshToken = generateRefreshToken(user);
       return {
         accessToken,
         refreshToken: newRefreshToken,

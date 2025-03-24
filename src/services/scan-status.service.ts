@@ -4,6 +4,7 @@ export enum JobStatusType {
   INITIALIZING = 'initializing',
   IN_PROGRESS = 'in_progress',
   COMPLETED = 'completed',
+  ERROR = 'error',
 }
 
 export enum UpdateJobStatusType {
@@ -71,6 +72,14 @@ export class ScanStatusService {
       case UpdateJobStatusType.MATCHED_UPDATED:
         status.photosMatchedUpdated += 1;
         break;
+    }
+  }
+
+  setScanJobError(userId: string): void {
+    const status = this.scanStatus.get(userId);
+    // If the status is not found, it means the job has not been initialized yet
+    if (status) {
+      status.status = JobStatusType.ERROR;
     }
   }
 

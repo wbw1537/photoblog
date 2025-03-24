@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
-import { CreateUserDTO, placeholder, TokenResponseDTO } from "../models/user.model.js";
+import { CreateUserDTO, TokenResponseDTO } from "../models/user.model.js";
 import { UserService } from "../services/user.service.js";
 
 export class UserController {
@@ -13,7 +13,7 @@ export class UserController {
   async register(req: Request, res: Response, next: NextFunction) {
     try {
       const { name, password, email } = req.body;
-      const user: CreateUserDTO = { name, password, email, basePath: placeholder };
+      const user: CreateUserDTO = { name, password, email };
       const newUser = await this.userService.register(user);
       res.status(201).json(newUser);
     } catch (err: unknown) {

@@ -1,4 +1,6 @@
-import { User } from "@prisma/client";
+import { PhotoFile, User } from "@prisma/client";
+import path from "path";
+import crypto from "crypto";
 
 import { PhotoBlogError } from "../errors/photoblog.error.js";
 import { FileResolution } from "../models/photo-file.model.js";
@@ -9,7 +11,6 @@ export class PhotoFileService {
     private photoFileRepository: PhotoFileRepository,
   ) {}
 
-  // To be implemented
   async getPhotoFileImageById(user: User, fileId: string, resolution: FileResolution) {
     const photoFile = await this.photoFileRepository.findById(fileId);
     if (!photoFile) {
@@ -18,12 +19,25 @@ export class PhotoFileService {
       throw new PhotoBlogError("Unauthorized", 401);
     }
 
-    if (resolution === FileResolution.ORIGINAL) {
-      const userBasePath = user.basePath;
-      console.log(`${userBasePath}/${photoFile.filePath}`);
-      return `${userBasePath}/${photoFile.filePath}`;
-    } else {
-      throw new PhotoBlogError("Resolution not supported", 400);
+    switch (resolution) {
+      case FileResolution.ORIGINAL:
+        return this.getOriginalPhotoPath(user, photoFile);
+      case FileResolution.PREVIEW:
+        return this.getPreviewPhotoPath(user, photoFile);
+      default:
+        throw new PhotoBlogError("Resolution not supported", 400);
     }
+  }
+
+  private getOriginalPhotoPath(user: User, photoFile: PhotoFile) {
+    return path.join(user.basePath, photoFile.filePath);
+  }
+
+  private getPreviewPhotoPath(user: User, photoFile: PhotoFile) {
+    // Create a hash from the filepath to match how it's stored in ConvertPhotoJob
+    const fileHash = crypto.createHash('md5').update(photoFile.filePath).digest('hex');
+    const hashPrefix = fileHash.substring(0, 2);
+    
+    return path.join(user.cachePath, 'previews', hashPrefix, `${fileHash}.webp`);
   }
 }

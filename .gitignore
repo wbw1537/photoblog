@@ -6,6 +6,7 @@ dist/
 
 # test path
 testPhotoPath/
+thumbnails/
 
 # test.ts
 test.ts
