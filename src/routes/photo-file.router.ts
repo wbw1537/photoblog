@@ -6,5 +6,6 @@ import { photoFileController } from '../di/di-container.js';
 const photoFileRouter = express.Router();
 
 photoFileRouter.get('/v1/photos/view/:fileId', authenticate, (req, res, next) => photoFileController.getPhotoFileImageById(req, res, next));
+photoFileRouter.get('/v1/photos/preview/:fileId', authenticate, (req, res, next) => photoFileController.getPreviewPhotoFileById(req, res, next));
 
 export default photoFileRouter;
