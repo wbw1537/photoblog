@@ -68,4 +68,16 @@ export class UserController {
       next(err);
     }
   }
+
+  async getUsers(req: Request, res: Response, next: NextFunction) {
+    const { skip, take } = req.query;
+    const skipNumber = parseInt(skip as string, 10);
+    const takeNumber = parseInt(take as string, 10);
+    try {
+      const users = await this.userService.getUsers(skipNumber, takeNumber);
+      res.status(200).json({ users });
+    } catch (err: unknown) {
+      next(err);
+    }
+  }
 }

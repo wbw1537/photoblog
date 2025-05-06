@@ -41,14 +41,21 @@ model User {
   name      String
   password  String
   email     String   @unique
+  address   String   @default("**PLACEHOLDER**")
   type      UserType @default(Pending)
   basePath  String   @default("**PLACEHOLDER**")
   cachePath String   @default("**PLACEHOLDER**")
+
+  // Encryption keys
+  publicKey  String
+  privateKey String
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   photos Photo[]
   blogs  Blog[]
+  sharedUsers SharedUser[]
 }
 
 // Photo model
@@ -158,4 +165,31 @@ model BlogTag {
   tagId  String
 
   @@id([blogId, tagId])
+}
+
+enum SharedUserStatus {
+  // For Incoming requests
+  Incoming
+  Rejected
+
+  // For Outgoing requests
+  Pending
+  Active
+  Blocked
+}
+
+model SharedUser {
+  id String @id @default(cuid())
+  user User @relation(fields: [userId], references: [id])
+  userId String
+  comment String
+  sharedUserId String
+  sharedUserEmail String
+  sharedUserName String
+  sharedUserAddress String
+  status SharedUserStatus
+
+  // Encryption keys
+  sharedUserTempSymmetricKey String
+  sharedUserPublicKey String
 }

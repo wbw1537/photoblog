@@ -27,6 +27,19 @@ export class UserRepository {
     });
   }
 
+  async findAll(skip: number, take: number) {
+    return await this.prismaClient.user.findMany({
+      skip,
+      take,
+      select : {
+        id: true,
+        name: true,
+        email: true,
+        address: true,
+      }
+    });
+  }
+
   async findByEmail(email: string) {
     return await this.prismaClient.user.findUnique({
       where: { email },
@@ -40,12 +53,14 @@ export class UserRepository {
     });
   }
 
-  async create(user: CreateUserDTO) {
+  async create(user: CreateUserDTO, publicKey: string, privateKey: string) {
     return await this.prismaClient.user.create({
       data: {
         name: user.name,
         password: user.password,
-        email: user.email
+        email: user.email,
+        publicKey,
+        privateKey,
       },
     });
   }
