@@ -2,10 +2,11 @@ import express from 'express';
 
 import { authenticate } from '../middleware/auth.middleware.js';
 import { photoScanController } from '../di/di-container.js';
+import { API_URLS } from './api.constants.js';
 
 const photoScanRouter = express.Router();
 
-photoScanRouter.post('/v1/scan', authenticate, (req, res, next) => photoScanController.scan(req, res, next));
-photoScanRouter.post('/v1/delta-scan', authenticate, (req, res, next) => photoScanController.deltaScan(req, res, next));
+photoScanRouter.post(API_URLS.PHOTO_SCAN.SCAN, authenticate, (req, res, next) => photoScanController.scan(req, res, next));
+photoScanRouter.post(API_URLS.PHOTO_SCAN.DELTA_SCAN, authenticate, (req, res, next) => photoScanController.deltaScan(req, res, next));
 
 export default photoScanRouter;
