@@ -31,7 +31,9 @@ export const API_URLS = {
     BY_ID: '/v1/blogs/:blogId',
   },
   SHARED_USER: {
+    BASE: '/v1/shared-user',
     FETCH_REMOTE: '/v1/shared-user/fetch-remote',
-    INIT_REMOTE: '/public/v1/shared-user/init',
+    INIT: '/v1/shared-user/init',
+    PUBLIC_INIT: '/public/v1/shared-user/init',
   },
 };

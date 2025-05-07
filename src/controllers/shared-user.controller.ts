@@ -1,18 +1,39 @@
 import { NextFunction, Request, Response } from "express";
 
-import { SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO } from "../models/shared-user.model.js";
+import { SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserRequest } from "../models/shared-user.model.js";
 import { SharedUserService } from "../services/shared-user.service.js";
+import { SharedUserDirection, SharedUserStatus } from "@prisma/client";
 
 export class SharedUserController {
   constructor(
     private sharedUserService: SharedUserService
   ) { }
 
+  async getSharedUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.body.user.id;
+      const sharedUserRequest: SharedUserRequest = {
+        name: req.query.name as string,
+        email: req.query.email as string,
+        remoteAddress: req.query.remoteAddress as string,
+        status: req.query.status as SharedUserStatus,
+        direction: req.query.direction as SharedUserDirection,
+
+        skip: parseInt(req.query.skip as string) || 0,
+        take: parseInt(req.query.take as string) || 10,
+      }
+      const sharedUsers = await this.sharedUserService.getSharedUsers(userId, sharedUserRequest);
+      res.status(200).json(sharedUsers);
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
   async fetchRemoteUsers(req: Request, res: Response, next: NextFunction) {
     try {
       const remoteAddress = req.query.remoteAddress as string;
       if (!remoteAddress) {
-        res.status(400).json({ error: "Missing remoteAddress query parameter" });
+        res.status(400).json({ error: "Missing remoteAddress query" });
         return;
       }
       const remoteUsers = await this.sharedUserService.fetchRemoteUsers(remoteAddress);

@@ -1,3 +1,5 @@
+import { SharedUserDirection, SharedUserStatus } from "@prisma/client";
+
 export interface SharedUserInitRequestDTO {
   requestToUserInfo: {
     id: string;
@@ -44,3 +46,23 @@ export interface RequestUserInfo {
   remoteAddress: string;
 }
 
+export interface SharedUserInfo {
+  id: string;
+  name: string;
+  email: string;
+  remoteAddress: string;
+  status: SharedUserStatus;
+  direction: SharedUserDirection;
+  comment: string;
+}
+
+export interface SharedUserRequest {
+  name?: string;
+  email?: string;
+  remoteAddress?: string;
+  status?: SharedUserStatus;
+  direction?: SharedUserDirection;
+
+  skip: number;
+  take: number;
+}

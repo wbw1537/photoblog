@@ -1,4 +1,4 @@
-import { PrismaClient, SharedUserDirection, SharedUserStatus } from "@prisma/client";
+import { Prisma, PrismaClient, SharedUserDirection, SharedUserStatus } from "@prisma/client";
 
 import { SharedUserInitRemoteRequestDTO, SharedUserInitRespondDTO } from "../models/shared-user.model.js";
 
@@ -6,6 +6,51 @@ export class SharedUserRepository {
   constructor(
     private prismaClient: PrismaClient
   ) { }
+
+  async findAllByFilter(
+    skip: number,
+    take: number,
+    filter: Prisma.SharedUserWhereInput
+  ) {
+    const [sharedUsers, total] = await this.prismaClient.$transaction([
+      this.prismaClient.sharedUser.findMany({
+        take,
+        skip,
+        where: {
+          AND: [
+            filter,
+          ],
+        },
+        select: {
+          id: true,
+          userId: true,
+          sharedUserId: true,
+          sharedUserName: true,
+          sharedUserEmail: true,
+          sharedUserAddress: true,
+          status: true,
+          direction: true,
+          comment: true,
+        },
+      }),
+      this.prismaClient.sharedUser.count({
+        where: {
+          AND: [
+            filter,
+          ],
+        },
+      }),
+    ]);
+
+    return {
+      data: sharedUsers,
+      pagination: {
+        skip,
+        take,
+        total
+      }
+    }
+  }
 
   async createIncomingSharedUser(
     sharedUserRequest: SharedUserInitRemoteRequestDTO,

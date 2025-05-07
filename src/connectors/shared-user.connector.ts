@@ -21,7 +21,7 @@ export class SharedUserConnector {
   }
 
   async sendRemoteSharingRequest(remoteAddress: string, requestBody: SharedUserInitRemoteRequestDTO) {
-    const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.INIT_REMOTE}`, {
+    const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.PUBLIC_INIT}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,6 +1,8 @@
 import crypto from "crypto";
+import { Prisma } from "@prisma/client";
 
-import { SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO} from "../models/shared-user.model.js";
+
+import { SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest} from "../models/shared-user.model.js";
 import { SharedUserRepository } from "../repositories/shared-user.repository.js";
 import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
@@ -13,6 +15,11 @@ export class SharedUserService {
     private userRepository: UserRepository,
     private sharedUserConnector: SharedUserConnector
   ) {}
+
+  async getSharedUsers(userId: string, sharedUserRequest: SharedUserRequest) {
+    const whereInput = this.buildWhereInput(userId, sharedUserRequest);
+    return await this.sharedUserRepository.findAllByFilter(sharedUserRequest.skip, sharedUserRequest.take, whereInput);
+  }
 
   async fetchRemoteUsers(remoteAddress: string): Promise<PublicUsersResponseDTO> {
     // Fetch all remote users from the database
@@ -132,5 +139,29 @@ export class SharedUserService {
     const symmetricKey = crypto.createHash("sha256").update(sharedSecret).digest("hex");
 
     return symmetricKey;
+  }
+
+  private buildWhereInput(userId: string, sharedUserRequest: SharedUserRequest) {
+    const {
+      name,
+      email,
+      remoteAddress,
+      status,
+      direction,
+    } = sharedUserRequest;
+
+    const whereInput: Prisma.SharedUserWhereInput = {
+      userId: userId,
+      sharedUserEmail: email,
+      sharedUserName: name,
+      sharedUserAddress: remoteAddress,
+      status: status,
+      direction: direction,
+    }
+    // Remove any undefined properties in whereInput to avoid issues with Prisma queries
+    Object.keys(whereInput).forEach(
+      (key) => (whereInput as never)[key] === undefined && delete (whereInput as never)[key]
+    );
+    return whereInput;
   }
 }
