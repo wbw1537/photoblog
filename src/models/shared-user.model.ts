@@ -90,7 +90,7 @@ export interface SharedUserExchangeKeyRespond {
   timestamp: number;
 }
 
-export interface SharedUserValidateDTO {
+export interface SharedUserValidateRequest {
   requestFromUserInfo: {
     id: string;
   }

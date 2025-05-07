@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { Prisma, SharedUser, SharedUserDirection, SharedUserStatus, User } from "@prisma/client";
 
-import { SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest } from "../models/shared-user.model.js";
+import { SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { SharedUserRepository } from "../repositories/shared-user.repository.js";
 import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
@@ -113,12 +113,97 @@ export class SharedUserService {
     if (sharedUser.status === SharedUserStatus.Pending) {
       // Trigger key exchange and key validation
       await this.exchangeKeys(user, sharedUser);
-      await this.validateRemotePublicKey(user, sharedUser);
+      await this.validateKeys(user, sharedUser);
     }
     // Update the shared user status to active
     return await this.sharedUserRepository.activateSharedUser(
       sharedUser.id
     );
+  }
+
+  async exchangeRemotePublicKey(sharedUserExchangeKeyRequest: SharedUserExchangeKeyRequest) {
+    const { user, sharedUser } = await this.checkSharedUserPendingStatus(
+      sharedUserExchangeKeyRequest.requestFromUserInfo.id,
+      sharedUserExchangeKeyRequest.requestToUserInfo.id
+    );
+    // Decrypt the shared user's public key
+    const sharedUserTempSymmetricKey = sharedUser.sharedUserTempSymmetricKey;
+    const decryptedPublicKey = crypto
+      .createDecipheriv("aes-256-cbc", sharedUserTempSymmetricKey, Buffer.alloc(16, 0))
+      .update(sharedUserExchangeKeyRequest.encryptedPublicKey, "hex", "utf-8");
+    // Store the decrypted public key in the database
+    await this.sharedUserRepository.updateSharedUserPublicKey(
+      sharedUser.id,
+      decryptedPublicKey
+    );
+    // Encrypt the user's public key with the shared user's symmetric key
+    const encryptedPublicKey = crypto
+      .createCipheriv("aes-256-cbc", sharedUserTempSymmetricKey, Buffer.alloc(16, 0))
+      .update(user.publicKey, "utf-8", "hex");
+    // Use user's private key to make a signature
+    const signature = crypto
+      .createSign("SHA256")
+      .update(this.DOCUMENT)
+      .sign(user.privateKey, "hex");
+    // Create a response object
+    // The response includes the encrypted public key and the signature
+    // The signature is made by the user's private key
+    // Shared user should use the user's public key to verify the signature
+    const response: SharedUserExchangeKeyRespond = {
+      requestFromUserInfo: {
+        id: user.id,
+      },
+      requestToUserInfo: {
+        id: sharedUser.id,
+      },
+      encryptedPublicKey: encryptedPublicKey,
+      signature: signature,
+      timestamp: sharedUserExchangeKeyRequest.timestamp,
+    }
+    return response;
+  }
+
+  async validateRemotePublicKey(sharedUserValidateRequest: SharedUserValidateRequest) {
+    const { sharedUser } = await this.checkSharedUserPendingStatus(
+      sharedUserValidateRequest.requestFromUserInfo.id,
+      sharedUserValidateRequest.requestToUserInfo.id
+    );
+    // The received signature is made by the shared user's private key
+    // Use the shared user's public key to verify the signature
+    const isValid = crypto
+      .createVerify("SHA256")
+      .update(this.DOCUMENT)
+      .verify(sharedUser.sharedUserPublicKey, sharedUserValidateRequest.signature, "hex");
+    if (!isValid) {
+      throw new PhotoBlogError("Validate shared user's signature failed", 500);
+    }
+    // Activate the shared user
+    await this.sharedUserRepository.activateSharedUser(sharedUser.id);
+  }
+
+  private async checkSharedUserPendingStatus(userId: string, sharedUserId: string) {
+    // Check if the user exists
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new PhotoBlogError("User not found", 404);
+    }
+    // Check if the shared user exists
+    const sharedUser = await this.sharedUserRepository.findById(
+      user.id,
+      sharedUserId
+    );
+    if (!sharedUser) {
+      throw new PhotoBlogError("Shared user not found", 404);
+    }
+    // Check if direction is outgoing
+    if (sharedUser.direction !== SharedUserDirection.Outgoing) {
+      throw new PhotoBlogError("Shared user direction is not outgoing", 400);
+    }
+    // Check if current status is pending
+    if (sharedUser.status !== SharedUserStatus.Pending) {
+      throw new PhotoBlogError("Shared user is not pending", 400);
+    }
+    return { user, sharedUser };
   }
 
   private generateTempKeys(): { tempPublicKey: string; tempPrivateKey: string } {
@@ -176,12 +261,16 @@ export class SharedUserService {
   }
 
   private async exchangeKeys(user: User, sharedUser: SharedUser) {
+    // Encrypt the user's public key with the shared user's symmetric key
     const userPublicKey = user.publicKey;
     const sharedUserTempSymmetricKey = sharedUser.sharedUserTempSymmetricKey;
     const encryptedUserPublicKey = crypto
       .createCipheriv("aes-256-cbc", sharedUserTempSymmetricKey, Buffer.alloc(16, 0))
       .update(userPublicKey, "utf-8", "hex");
     const requestBody = await this.sharedUserConnector.buildExchangeKeyRequestBody(user, sharedUser, encryptedUserPublicKey);
+    // A signature is included in the response
+    // The signature is made by the shared user's private key
+    // Use the shared user's public key to verify the signature
     const response = await this.sharedUserConnector.exchangeEncryptedPublicKey(
       sharedUser.sharedUserAddress,
       requestBody
@@ -202,7 +291,8 @@ export class SharedUserService {
     );
   }
 
-  private async validateRemotePublicKey(user: User, sharedUser: SharedUser) {
+  private async validateKeys(user: User, sharedUser: SharedUser) {
+    // Create the signature using the user's private key
     const userPrivateKey = user.privateKey;
     const signature = crypto
       .createSign("SHA256")

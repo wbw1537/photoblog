@@ -1,6 +1,7 @@
 import { SharedUser, User } from "@prisma/client";
+
 import { PhotoBlogError } from "../errors/photoblog.error.js";
-import { SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserValidateDTO } from "../models/shared-user.model.js";
+import { SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { PublicUsersResponseDTO } from "../models/user.model.js";
 import { API_URLS } from "../routes/api.constants.js"
 
@@ -54,7 +55,7 @@ export class SharedUserConnector {
     return responseData as SharedUserExchangeKeyRespond;
   }
 
-  async validateRemotePublicKey(remoteAddress: string, requestBody: SharedUserValidateDTO) {
+  async validateRemotePublicKey(remoteAddress: string, requestBody: SharedUserValidateRequest) {
     const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.PUBLIC_VALIDATE}`, {
       method: "POST",
       headers: {
@@ -99,7 +100,7 @@ export class SharedUserConnector {
     };
   }
 
-  async buildValidateKeyRequestBody(user: User, sharedUser: SharedUser, signature: string): Promise<SharedUserValidateDTO> {
+  async buildValidateKeyRequestBody(user: User, sharedUser: SharedUser, signature: string): Promise<SharedUserValidateRequest> {
     return {
       requestFromUserInfo: {
         id: sharedUser.id,

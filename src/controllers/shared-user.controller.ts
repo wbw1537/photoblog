@@ -1,8 +1,9 @@
+import { SharedUserDirection, SharedUserStatus } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 
-import { SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserRequest } from "../models/shared-user.model.js";
+import { SharedUserExchangeKeyRequest, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserRequest, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { SharedUserService } from "../services/shared-user.service.js";
-import { SharedUserDirection, SharedUserStatus } from "@prisma/client";
+import { PhotoBlogError } from "../errors/photoblog.error.js";
 
 export class SharedUserController {
   constructor(
@@ -59,35 +60,31 @@ export class SharedUserController {
       const sharedUserRequest: SharedUserInitRemoteRequestDTO = req.body;
       if (!sharedUserRequest) {
         res.status(400).json({ error: "Missing request body" });
+        return;
       }
       if (!sharedUserRequest.requestFromUserInfo) {
         res.status(400).json({ error: "Missing requestFromUserInfo" });
+        return;
       }
       if (!sharedUserRequest.requestToUserInfo) {
         res.status(400).json({ error: "Missing requestToUserInfo" });
+        return;
       }
       if (!sharedUserRequest.requestFromUserInfo.id) {
         res.status(400).json({ error: "Missing requestFromUserInfo.id" });
+        return;
       }
-      if (!sharedUserRequest.requestFromUserInfo.id ||
-        !sharedUserRequest.requestFromUserInfo.name ||
-        !sharedUserRequest.requestFromUserInfo.email ||
-        !sharedUserRequest.requestFromUserInfo.remoteAddress ||
-        !sharedUserRequest.requestToUserInfo.id ||
-        !sharedUserRequest.tempPublicKey ||
-        !sharedUserRequest.timestamp ||
-        !sharedUserRequest.comment) {
-        res.status(400).json(
-          { error: "Missing required fields" });
+      if (!sharedUserRequest.requestFromUserInfo.name ||
+          !sharedUserRequest.requestFromUserInfo.email ||
+          !sharedUserRequest.requestFromUserInfo.remoteAddress ||
+          !sharedUserRequest.requestToUserInfo.id ||
+          !sharedUserRequest.tempPublicKey ||
+          !sharedUserRequest.timestamp ||
+          !sharedUserRequest.comment) {
+        res.status(400).json({ error: "Missing required fields" });
+        return;
       }
-      if (sharedUserRequest.timestamp < Date.now() / 1000 - 60 * 5) {
-        // Allow a 5 minute window for the timestamp to be valid
-        res.status(400).json({ error: "Timestamp is too old" });
-      }
-      if (sharedUserRequest.timestamp > Date.now()) {
-        res.status(400).json({ error: "Timestamp is in the future" });
-      }
-
+      this.validateTimestamp(sharedUserRequest.timestamp);
       const response = await this.sharedUserService.initRemoteSharingRequest(sharedUserRequest);
       res.status(201).json(response);
     } catch (error: unknown) {
@@ -103,6 +100,96 @@ export class SharedUserController {
       res.status(200).json({ message: "Shared user set to active" });
     } catch (error: unknown) {
       next(error);
+    }
+  }
+
+  async exchangeRemotePublicKey(req: Request, res: Response, next: NextFunction) {
+    try {
+      const sharedUserExchangeKeyRequest: SharedUserExchangeKeyRequest = req.body;
+      if (!sharedUserExchangeKeyRequest) {
+        res.status(400).json({ error: "Missing request body" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.requestFromUserInfo) {
+        res.status(400).json({ error: "Missing requestFromUserInfo" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.requestToUserInfo) {
+        res.status(400).json({ error: "Missing requestToUserInfo" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.requestFromUserInfo.id) {
+        res.status(400).json({ error: "Missing requestFromUserInfo.id" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.requestToUserInfo.id) {
+        res.status(400).json({ error: "Missing requestToUserInfo.id" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.encryptedPublicKey) {
+        res.status(400).json({ error: "Missing encryptedPublicKey" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.timestamp) {
+        res.status(400).json({ error: "Missing timestamp" });
+        return;
+      }
+      this.validateTimestamp(sharedUserExchangeKeyRequest.timestamp);
+      const response = await this.sharedUserService.exchangeRemotePublicKey(sharedUserExchangeKeyRequest);
+      res.status(200).json(response);
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  async validateRemotePublicKey(req: Request, res: Response, next: NextFunction) {
+    try {
+      const sharedUserExchangeKeyRequest: SharedUserValidateRequest = req.body;
+      if (!sharedUserExchangeKeyRequest) {
+        res.status(400).json({ error: "Missing request body" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.requestFromUserInfo) {
+        res.status(400).json({ error: "Missing requestFromUserInfo" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.requestToUserInfo) {
+        res.status(400).json({ error: "Missing requestToUserInfo" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.requestFromUserInfo.id) {
+        res.status(400).json({ error: "Missing requestFromUserInfo.id" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.requestToUserInfo.id) {
+        res.status(400).json({ error: "Missing requestToUserInfo.id" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.signature) {
+        res.status(400).json({ error: "Missing signature" });
+        return;
+      }
+      if (!sharedUserExchangeKeyRequest.timestamp) {
+        res.status(400).json({ error: "Missing timestamp" });
+        return;
+      }
+      this.validateTimestamp(sharedUserExchangeKeyRequest.timestamp);
+      await this.sharedUserService.validateRemotePublicKey(sharedUserExchangeKeyRequest);
+      res.status(200).json({ message: "Public key validated" });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
+  private async validateTimestamp(timestamp: number) {
+    const currentTime = Date.now();
+    const timeDifference = currentTime - timestamp;
+    const fiveMinutesInMillis = 5 * 60 * 1000;
+    if (timeDifference > fiveMinutesInMillis) {
+      throw new PhotoBlogError("Timestamp is too old", 500);
+    }
+    if (timeDifference < 0) {
+      throw new PhotoBlogError("Timestamp is in the future", 500);
     }
   }
 }

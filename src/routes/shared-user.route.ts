@@ -14,5 +14,7 @@ sharedUserRouter.post(API_URLS.SHARED_USER.ACTIVE, authenticate, (req, res, next
 
 // Public routes
 sharedUserRouter.post(API_URLS.SHARED_USER.PUBLIC_INIT, (req, res, next) => sharedUserController.initRemoteSharingRequest(req, res, next));
+sharedUserRouter.post(API_URLS.SHARED_USER.PUBLIC_EXCHANGE, (req, res, next) => sharedUserController.exchangeRemotePublicKey(req, res, next));
+sharedUserRouter.post(API_URLS.SHARED_USER.PUBLIC_VALIDATE, (req, res, next) => sharedUserController.validateRemotePublicKey(req, res, next));
 
 export default sharedUserRouter;
