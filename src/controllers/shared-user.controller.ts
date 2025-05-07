@@ -94,4 +94,15 @@ export class SharedUserController {
       next(error);
     }
   }
+
+  async setSharedUserActive(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.body.user.id;
+      const sharedUserId = req.params.sharedUserId;
+      await this.sharedUserService.setSharedUserActive(userId, sharedUserId);
+      res.status(200).json({ message: "Shared user set to active" });
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
 }

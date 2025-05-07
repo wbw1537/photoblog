@@ -52,6 +52,15 @@ export class SharedUserRepository {
     }
   }
 
+  async findById(userId: string, id: string) {
+    return await this.prismaClient.sharedUser.findUnique({
+      where: {
+        userId,
+        id,
+      },
+    });
+  }
+
   async createIncomingSharedUser(
     sharedUserRequest: SharedUserInitRemoteRequestDTO,
     sharedUserTempSymmetricKey: string
@@ -90,6 +99,33 @@ export class SharedUserRepository {
 
         sharedUserPublicKey: SharedUserInitRespond.tempPublicKey,
         sharedUserTempSymmetricKey: sharedUserTempSymmetricKey
+      },
+    });
+  }
+
+  async activateSharedUser(
+    id: string,
+  ) {
+    return await this.prismaClient.sharedUser.update({
+      where: {
+        id,
+      },
+      data: {
+        status: SharedUserStatus.Active,
+      },
+    });
+  }
+
+  async updateSharedUserPublicKey(
+    id: string,
+    sharedUserPublicKey: string,
+  ) {
+    return await this.prismaClient.sharedUser.update({
+      where: {
+        id,
+      },
+      data: {
+        sharedUserPublicKey,
       },
     });
   }

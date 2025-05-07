@@ -34,6 +34,10 @@ export const API_URLS = {
     BASE: '/v1/shared-user',
     FETCH_REMOTE: '/v1/shared-user/fetch-remote',
     INIT: '/v1/shared-user/init',
+    ACTIVE: '/v1/shared-user/active',
+    // Public endpoints
     PUBLIC_INIT: '/public/v1/shared-user/init',
+    PUBLIC_EXCHANGE: '/public/v1/shared-user/exchange',
+    PUBLIC_VALIDATE: '/public/v1/shared-user/validate',
   },
 };

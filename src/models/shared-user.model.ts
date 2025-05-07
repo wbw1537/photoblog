@@ -66,3 +66,37 @@ export interface SharedUserRequest {
   skip: number;
   take: number;
 }
+
+export interface SharedUserExchangeKeyRequest {
+  requestToUserInfo: {
+    id: string;
+  }
+  requestFromUserInfo: {
+    id: string;
+  }
+  encryptedPublicKey: string;
+  timestamp: number;
+}
+
+export interface SharedUserExchangeKeyRespond {
+  requestFromUserInfo: {
+    id: string;
+  }
+  requestToUserInfo: {
+    id: string;
+  }
+  encryptedPublicKey: string;
+  signature: string;
+  timestamp: number;
+}
+
+export interface SharedUserValidateDTO {
+  requestFromUserInfo: {
+    id: string;
+  }
+  requestToUserInfo: {
+    id: string;
+  }
+  signature: string;
+  timestamp: number;
+}

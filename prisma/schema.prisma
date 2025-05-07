@@ -169,8 +169,8 @@ model BlogTag {
 
 enum SharedUserStatus {
   Pending
-  Blocked
   Active
+  Blocked
 }
 
 enum SharedUserDirection {

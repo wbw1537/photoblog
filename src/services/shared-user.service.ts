@@ -1,8 +1,7 @@
 import crypto from "crypto";
-import { Prisma } from "@prisma/client";
+import { Prisma, SharedUser, SharedUserDirection, SharedUserStatus, User } from "@prisma/client";
 
-
-import { SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest} from "../models/shared-user.model.js";
+import { SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest } from "../models/shared-user.model.js";
 import { SharedUserRepository } from "../repositories/shared-user.repository.js";
 import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
@@ -10,6 +9,8 @@ import { PublicUsersResponseDTO } from "../models/user.model.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
 
 export class SharedUserService {
+  readonly DOCUMENT = 'Aureliano -dijo tristemente el manipulador-, está lloviendo en Macondo.';
+
   constructor(
     private sharedUserRepository: SharedUserRepository,
     private userRepository: UserRepository,
@@ -28,44 +29,24 @@ export class SharedUserService {
   }
 
   async initSharingRequest(userId: string, sharedUserInitRequest: SharedUserInitRequestDTO): Promise<void> {
-    // Get user info
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new PhotoBlogError("User not found", 404);
     }
-    // Generate a temporary public key and private key
     const { tempPublicKey, tempPrivateKey } = this.generateTempKeys();
-    // Create request body
-    const requestBody: SharedUserInitRemoteRequestDTO = {
-      requestFromUserInfo: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        remoteAddress: user.address,
-      },
-      requestToUserInfo: {
-        id: sharedUserInitRequest.requestToUserInfo.id,
-      },
-      tempPublicKey,
-      timestamp: Date.now(),
-      comment: sharedUserInitRequest.comment,
-    };
-    // Send the request to the remote user
+    const requestBody = await this.sharedUserConnector.buildInitRemoteRequestBody(user, sharedUserInitRequest, tempPublicKey);
     try {
       const response = await this.sharedUserConnector.sendRemoteSharingRequest(
         sharedUserInitRequest.requestToUserInfo.address,
         requestBody
       ) as SharedUserInitRespondDTO;
-      // Check if the response is valid
       if (!response || !response.requestFromUserInfo || !response.requestToUserInfo) {
         throw new PhotoBlogError("Invalid response from remote user", 500);
       }
-      // Generate a shared symmetric key using DHKE
       const sharedUserTempSymmetricKey = this.generateSharedSymmetricKey(
         tempPrivateKey,
         response.tempPublicKey
       );
-      // Create a new shared user in the database
       await this.sharedUserRepository.createOutgoingSharedUser(
         response,
         sharedUserTempSymmetricKey
@@ -108,7 +89,36 @@ export class SharedUserService {
       timestamp: sharedUserRequest.timestamp,
     };
     return response;
-    // TODO: trigger user authentication
+  }
+
+  async setSharedUserActive(userId: string, sharedUserId: string) {
+    // Check if the user exists
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new PhotoBlogError("User not found", 404);
+    }
+    // Check if the shared user exists
+    const sharedUser = await this.sharedUserRepository.findById(userId, sharedUserId);
+    if (!sharedUser) {
+      throw new PhotoBlogError("Shared user not found", 404);
+    }
+    // Check if direction is incoming
+    if (sharedUser.direction !== SharedUserDirection.Incoming) {
+      throw new PhotoBlogError("Shared user direction is not incoming", 400);
+    }
+    // Check if current status is already active
+    if (sharedUser.status === SharedUserStatus.Active) {
+      throw new PhotoBlogError("Shared user is already active", 400);
+    }
+    if (sharedUser.status === SharedUserStatus.Pending) {
+      // Trigger key exchange and key validation
+      await this.exchangeKeys(user, sharedUser);
+      await this.validateRemotePublicKey(user, sharedUser);
+    }
+    // Update the shared user status to active
+    return await this.sharedUserRepository.activateSharedUser(
+      sharedUser.id
+    );
   }
 
   private generateTempKeys(): { tempPublicKey: string; tempPrivateKey: string } {
@@ -163,5 +173,45 @@ export class SharedUserService {
       (key) => (whereInput as never)[key] === undefined && delete (whereInput as never)[key]
     );
     return whereInput;
+  }
+
+  private async exchangeKeys(user: User, sharedUser: SharedUser) {
+    const userPublicKey = user.publicKey;
+    const sharedUserTempSymmetricKey = sharedUser.sharedUserTempSymmetricKey;
+    const encryptedUserPublicKey = crypto
+      .createCipheriv("aes-256-cbc", sharedUserTempSymmetricKey, Buffer.alloc(16, 0))
+      .update(userPublicKey, "utf-8", "hex");
+    const requestBody = await this.sharedUserConnector.buildExchangeKeyRequestBody(user, sharedUser, encryptedUserPublicKey);
+    const response = await this.sharedUserConnector.exchangeEncryptedPublicKey(
+      sharedUser.sharedUserAddress,
+      requestBody
+    ) as SharedUserExchangeKeyRespond;
+    const decryptedResponsePublicKey = crypto
+      .createDecipheriv("aes-256-cbc", sharedUserTempSymmetricKey, Buffer.alloc(16, 0))
+      .update(response.encryptedPublicKey, "hex", "utf-8");
+    const isValid = crypto
+      .createVerify("SHA256")
+      .update(this.DOCUMENT)
+      .verify(decryptedResponsePublicKey, response.signature, "hex");
+    if (!isValid) {
+      throw new PhotoBlogError("Validate shared user's signature failed", 500);
+    }
+    await this.sharedUserRepository.updateSharedUserPublicKey(
+      sharedUser.id,
+      decryptedResponsePublicKey
+    );
+  }
+
+  private async validateRemotePublicKey(user: User, sharedUser: SharedUser) {
+    const userPrivateKey = user.privateKey;
+    const signature = crypto
+      .createSign("SHA256")
+      .update(this.DOCUMENT)
+      .sign(userPrivateKey, "hex");
+    const requestBody = await this.sharedUserConnector.buildValidateKeyRequestBody(user, sharedUser, signature);
+    await this.sharedUserConnector.validateRemotePublicKey(
+      sharedUser.sharedUserAddress,
+      requestBody
+    );
   }
 }
