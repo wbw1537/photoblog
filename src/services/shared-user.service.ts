@@ -1,10 +1,11 @@
 import crypto from "crypto";
 
-import { SharedUserInitRequestDTO , SharedUserInitRespondDTO} from "../models/shared-user.model.js";
+import { SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO} from "../models/shared-user.model.js";
 import { SharedUserRepository } from "../repositories/shared-user.repository.js";
 import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
 import { PublicUsersResponseDTO } from "../models/user.model.js";
+import { PhotoBlogError } from "../errors/photoblog.error.js";
 
 export class SharedUserService {
   constructor(
@@ -19,11 +20,59 @@ export class SharedUserService {
     return remoteUsers;
   }
 
-  async initRemoteSharingRequest(sharedUserRequest: SharedUserInitRequestDTO): Promise<SharedUserInitRespondDTO> {
+  async initSharingRequest(userId: string, sharedUserInitRequest: SharedUserInitRequestDTO): Promise<void> {
+    // Get user info
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new PhotoBlogError("User not found", 404);
+    }
+    // Generate a temporary public key and private key
+    const { tempPublicKey, tempPrivateKey } = this.generateTempKeys();
+    // Create request body
+    const requestBody: SharedUserInitRemoteRequestDTO = {
+      requestFromUserInfo: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        remoteAddress: user.address,
+      },
+      requestToUserInfo: {
+        id: sharedUserInitRequest.requestToUserInfo.id,
+      },
+      tempPublicKey,
+      timestamp: Date.now(),
+      comment: sharedUserInitRequest.comment,
+    };
+    // Send the request to the remote user
+    try {
+      const response = await this.sharedUserConnector.sendRemoteSharingRequest(
+        sharedUserInitRequest.requestToUserInfo.address,
+        requestBody
+      ) as SharedUserInitRespondDTO;
+      // Check if the response is valid
+      if (!response || !response.requestFromUserInfo || !response.requestToUserInfo) {
+        throw new PhotoBlogError("Invalid response from remote user", 500);
+      }
+      // Generate a shared symmetric key using DHKE
+      const sharedUserTempSymmetricKey = this.generateSharedSymmetricKey(
+        tempPrivateKey,
+        response.tempPublicKey
+      );
+      // Create a new shared user in the database
+      await this.sharedUserRepository.createOutgoingSharedUser(
+        response,
+        sharedUserTempSymmetricKey
+      );
+    } catch (error) {
+      throw new PhotoBlogError(`Failed to send remote sharing request: ${error}`, 500);
+    }
+  }
+
+  async initRemoteSharingRequest(sharedUserRequest: SharedUserInitRemoteRequestDTO): Promise<SharedUserInitRespondDTO> {
     // check if the user exists
     const user = await this.userRepository.findById(sharedUserRequest.requestFromUserInfo.id);
     if (!user) {
-      throw new Error("User not found");
+      throw new PhotoBlogError("User not found", 404);
     }
     // Generate a temporary public key and private key
     const { tempPublicKey, tempPrivateKey } = this.generateTempKeys();
@@ -68,10 +117,10 @@ export class SharedUserService {
     return { tempPublicKey, tempPrivateKey };
   }
 
-  private generateSharedSymmetricKey(tempPrivateKey: string, requestFromPublicKey: string): string {
+  private generateSharedSymmetricKey(tempPrivateKey: string, remotePublicKey: string): string {
     // Convert keys from PEM format to buffers
     const privateKey = crypto.createPrivateKey({ key: tempPrivateKey, format: "pem" });
-    const publicKey = crypto.createPublicKey({ key: requestFromPublicKey, format: "pem" });
+    const publicKey = crypto.createPublicKey({ key: remotePublicKey, format: "pem" });
 
     // Derive a shared secret using ECDH (Elliptic Curve Diffie-Hellman)
     const sharedSecret = crypto.diffieHellman({

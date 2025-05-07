@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
-import { SharedUserInitRequestDTO } from "../models/shared-user.model.js";
+import { SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO } from "../models/shared-user.model.js";
 import { SharedUserService } from "../services/shared-user.service.js";
 
 export class SharedUserController {
@@ -22,9 +22,20 @@ export class SharedUserController {
     }
   }
 
+  async initSharingRequest(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.body.user.id;
+      const sharedUserInitRequest: SharedUserInitRequestDTO = req.body;
+      await this.sharedUserService.initSharingRequest(userId, sharedUserInitRequest);
+      res.status(201);
+    } catch (error: unknown) {
+      next(error);
+    }
+  }
+
   async initRemoteSharingRequest(req: Request, res: Response, next: NextFunction) {
     try {
-      const sharedUserRequest: SharedUserInitRequestDTO = req.body;
+      const sharedUserRequest: SharedUserInitRemoteRequestDTO = req.body;
       if (!sharedUserRequest) {
         res.status(400).json({ error: "Missing request body" });
       }

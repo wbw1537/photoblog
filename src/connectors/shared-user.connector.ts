@@ -1,3 +1,5 @@
+import { PhotoBlogError } from "../errors/photoblog.error.js";
+import { SharedUserInitRemoteRequestDTO } from "../models/shared-user.model.js";
 import { PublicUsersResponseDTO } from "../models/user.model.js";
 import { API_URLS } from "../routes/api.constants.js"
 
@@ -12,9 +14,24 @@ export class SharedUserConnector {
       },
     });
     if (!remoteUsers.ok) {
-      throw new Error(`Failed to fetch remote users: ${remoteUsers.statusText}`);
+      throw new PhotoBlogError(`Failed to fetch remote users: ${remoteUsers.statusText}`, 500);
     }
     const remoteUsersData = await remoteUsers.json() as PublicUsersResponseDTO;
     return remoteUsersData;
+  }
+
+  async sendRemoteSharingRequest(remoteAddress: string, requestBody: SharedUserInitRemoteRequestDTO) {
+    const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.INIT_REMOTE}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+    if (!response.ok) {
+      throw new PhotoBlogError(`Failed to send remote sharing request: ${response.statusText}`, 500);
+    }
+    const responseData = await response.json();
+    return responseData;
   }
 }

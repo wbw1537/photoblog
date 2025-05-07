@@ -1,4 +1,13 @@
 export interface SharedUserInitRequestDTO {
+  requestToUserInfo: {
+    id: string;
+    address: string;
+  }
+  comment: string;
+}
+
+export interface SharedUserInitRemoteRequestDTO {
+  // Remote user info
   requestFromUserInfo: {
     id: string;
     name: string;
@@ -14,6 +23,7 @@ export interface SharedUserInitRequestDTO {
 }
 
 export interface SharedUserInitRespondDTO {
+  // Remote user info
   requestFromUserInfo: {
     id: string;
   };
@@ -21,8 +31,16 @@ export interface SharedUserInitRespondDTO {
     id: string;
     name: string;
     email: string;
-    remoteAddress?: string;
+    remoteAddress: string;
   };
   tempPublicKey: string;
   timestamp: number;
 }
+
+export interface RequestUserInfo {
+  id: string;
+  name: string;
+  email: string;
+  remoteAddress: string;
+}
+
