@@ -6,6 +6,7 @@ import { scanStatusController } from '../di/di-container.js';
 
 const scanStatusRouter = express.Router();
 
-scanStatusRouter.get(API_URLS.SCAN_STATUS.BASE, authenticate, (req, res, next) => scanStatusController.getStatus(req, res, next));
+scanStatusRouter.get(API_URLS.SCAN_STATUS.BASE, authenticate, (req, res, next) => 
+  scanStatusController.getStatus(req, res, next));
 
 export default scanStatusRouter;

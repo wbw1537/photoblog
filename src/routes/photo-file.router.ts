@@ -1,12 +1,22 @@
 import express from 'express';
-import { authenticate } from '../di/di-container.js';
+import { authenticate, authenticateSharedUser } from '../di/di-container.js';
 import { API_URLS } from './api.constants.js';
 
 import { photoFileController } from '../di/di-container.js';
 
 const photoFileRouter = express.Router();
 
-photoFileRouter.get(API_URLS.PHOTO_FILE.VIEW, authenticate, (req, res, next) => photoFileController.getPhotoFileImageById(req, res, next));
-photoFileRouter.get(API_URLS.PHOTO_FILE.PREVIEW, authenticate, (req, res, next) => photoFileController.getPreviewPhotoFileById(req, res, next));
+photoFileRouter.get(API_URLS.PHOTO_FILE.VIEW, authenticate, (req, res, next) => 
+  photoFileController.getPhotoFileImageById(req, res, next));
+
+photoFileRouter.get(API_URLS.PHOTO_FILE.PREVIEW, authenticate, (req, res, next) => 
+  photoFileController.getPreviewPhotoFileById(req, res, next));
+
+// Private routes
+photoFileRouter.get(API_URLS.PHOTO_FILE.PUBLIC_VIEW, authenticateSharedUser, (req, res, next) => 
+  photoFileController.getPhotoFileImageById(req, res, next));
+
+photoFileRouter.get(API_URLS.PHOTO_FILE.PUBLIC_PREVIEW, authenticateSharedUser, (req, res, next) => 
+  photoFileController.getPreviewPhotoFileById(req, res, next));
 
 export default photoFileRouter;

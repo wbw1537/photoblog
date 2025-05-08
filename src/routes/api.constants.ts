@@ -18,6 +18,9 @@ export const API_URLS = {
     BASE: '/v1/photos',
     BY_ID: '/v1/photos/:id',
     LIKE: '/v1/photos/:id/like',
+    // Public endpoints
+    PUBLIC_BASE: '/public/v1/photos',
+    PUBLIC_BY_ID: '/public/v1/photos/:id',
   },
   PHOTO_SCAN: {
     SCAN: '/v1/scan',
@@ -26,10 +29,16 @@ export const API_URLS = {
   PHOTO_FILE: {
     VIEW: '/v1/photos/view/:fileId',
     PREVIEW: '/v1/photos/preview/:fileId',
+    // Public endpoints
+    PUBLIC_VIEW: '/public/v1/photos/view/:fileId',
+    PUBLIC_PREVIEW: '/public/v1/photos/preview/:fileId',
   },
   BLOG: {
     BASE: '/v1/blogs',
     BY_ID: '/v1/blogs/:blogId',
+    // Public endpoints
+    PUBLIC_BASE: '/public/v1/blogs',
+    PUBLIC_BY_ID: '/public/v1/blogs/:blogId',
   },
   SHARED_USER: {
     BASE: '/v1/shared-user',
