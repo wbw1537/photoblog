@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate, authenticateSharedUser } from '../di/di-container.js';
+import { authenticate, authenticateSharedUser, encrypt } from '../di/di-container.js';
 import { API_URLS } from './api.constants.js';
 
 import { photoFileController } from '../di/di-container.js';
@@ -13,10 +13,10 @@ photoFileRouter.get(API_URLS.PHOTO_FILE.PREVIEW, authenticate, (req, res, next) 
   photoFileController.getPreviewPhotoFileById(req, res, next));
 
 // Private routes
-photoFileRouter.get(API_URLS.PHOTO_FILE.PUBLIC_VIEW, authenticateSharedUser, (req, res, next) => 
+photoFileRouter.get(API_URLS.PHOTO_FILE.PUBLIC_VIEW, authenticateSharedUser, encrypt, (req, res, next) => 
   photoFileController.getPhotoFileImageById(req, res, next));
 
-photoFileRouter.get(API_URLS.PHOTO_FILE.PUBLIC_PREVIEW, authenticateSharedUser, (req, res, next) => 
+photoFileRouter.get(API_URLS.PHOTO_FILE.PUBLIC_PREVIEW, authenticateSharedUser, encrypt, (req, res, next) => 
   photoFileController.getPreviewPhotoFileById(req, res, next));
 
 export default photoFileRouter;

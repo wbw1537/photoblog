@@ -32,6 +32,7 @@ import { TagController } from '../controllers/tag.controller.js';
 import { PhotoController } from '../controllers/photo.controller.js';
 import { PhotoFileController } from '../controllers/photo-file.controller.js';
 import { SharedUserController } from '../controllers/shared-user.controller.js';
+import { EncryptionMiddleware } from '../middleware/encryption.middleware.js';
 
 // Logger instance
 log4js.configure({
@@ -57,6 +58,9 @@ const scanStatusService = new ScanStatusService();
 const authMiddleware = new AuthMiddleware(logger, sharedUserRepository);
 const authenticate = authMiddleware.authenticate;
 const authenticateSharedUser = authMiddleware.authenticateSharedUser;
+const encryptionMiddleware = new EncryptionMiddleware();
+const encrypt = encryptionMiddleware.encrypt;
+
 
 // Job layer instances
 const convertPhotoJob = new ConvertPhotoJob(logger);
@@ -89,6 +93,7 @@ const sharedUserController = new SharedUserController(sharedUserService);
 export {
   authenticate,
   authenticateSharedUser,
+  encrypt,
   userController,
   photoScanController,
   scanStatusController,
