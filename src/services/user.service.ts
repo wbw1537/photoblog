@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 
-import { CreateUserDTO, TokenResponseDTO, UserLoginResponseDTO, UserResponseDTO } from '../models/user.model.js';
+import { CreateUserDTO, TokenResponseDTO, UserLoginResponseDTO, UserResponseDTO, UserInfoDTO } from '../models/user.model.js';
 import { generateAccessToken, generateRefreshToken, shouldRenewRefreshToken, verifyToken } from '../utils/jwt.util.js';
 import { UserRepository } from '../repositories/user.repository.js';
 
@@ -18,7 +19,14 @@ export class UserService {
   async register(user: CreateUserDTO): Promise<UserResponseDTO> {
     const hashedPassword = await bcrypt.hash(user.password, 10);
     user.password = hashedPassword;
-    const newUser = await this.userRepository.create(user);
+    // Create a new key pair for the user
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+      modulusLength: 2048,
+    });
+    // Export the keys as PEM strings
+    const publicKeyString = publicKey.export({ type: 'pkcs1', format: 'pem' }).toString();
+    const privateKeyString = privateKey.export({ type: 'pkcs1', format: 'pem' }).toString();
+    const newUser = await this.userRepository.create(user, publicKeyString, privateKeyString);
     const userResponse: UserResponseDTO = {
       id: newUser.id,
       name: newUser.name,
@@ -85,5 +93,15 @@ export class UserService {
     return {
       accessToken,
     };
+  }
+
+  async getUsers(skip: number, take: number): Promise<UserInfoDTO[]> {
+    const users = await this.userRepository.findAll(skip, take);
+    return users.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      address: user.address,
+    }));
   }
 }

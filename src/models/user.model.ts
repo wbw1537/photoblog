@@ -4,6 +4,7 @@ export interface CreateUserDTO {
   name: string;
   password: string;
   email: string;
+  address?: string;
 }
 
 export interface UserResponseDTO {
@@ -13,6 +14,17 @@ export interface UserResponseDTO {
   type: UserType;
   basePath: string;
   cachePath: string;
+}
+
+export interface PublicUsersResponseDTO {
+  users: UserInfoDTO[];
+}
+
+export interface UserInfoDTO {
+  id: string;
+  name: string;
+  email: string;
+  address: string;
 }
 
 export interface UserLoginResponseDTO extends UserResponseDTO {
