@@ -207,15 +207,12 @@ export class SharedUserService {
   }
 
   private generateTempKeys(): { tempPublicKey: string; tempPrivateKey: string } {
-    // Generate a pair of RSA keys
-    const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
-      modulusLength: 2048,
-    });
-
+    // Generate a pair of x25519 keys
+    const tempKeyPair = crypto.generateKeyPairSync('x25519');
+    
     // Export the keys as PEM strings
-    const tempPublicKey = publicKey.export({ type: "pkcs1", format: "pem" }).toString();
-    const tempPrivateKey = privateKey.export({ type: "pkcs1", format: "pem" }).toString();
-
+    const tempPublicKey = tempKeyPair.publicKey.export({ type: 'spki', format: 'pem' }).toString('utf8');
+    const tempPrivateKey = tempKeyPair.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString('utf8');
     return { tempPublicKey, tempPrivateKey };
   }
 
