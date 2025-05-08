@@ -13,9 +13,11 @@ export class EncryptionMiddleware {
     res.send = (body: unknown): Response => {
       try {
         // Encrypt the response body
-        const encrypted = crypto.publicEncrypt(req.body.user.session, Buffer.from(JSON.stringify(body)));
+        const encrypted = crypto
+          .createCipheriv('aes-256-cbc', req.body.user.session, Buffer.alloc(16, 0))
+          .update(JSON.stringify(body), 'utf8', 'hex');
         // Convert the encrypted data to base64
-        const encryptedBase64 = encrypted.toString('base64');
+        const encryptedBase64 = encrypted.toString();
         // Set the encrypted data in the response body
         return originalSend(encryptedBase64);
       } catch (error) {
@@ -33,9 +35,11 @@ export class EncryptionMiddleware {
             return;
           }
           // Encrypt the file contents
-          const encrypted = crypto.publicEncrypt(req.body.user.session, data);
+          const encrypted = crypto
+          .createCipheriv('aes-256-cbc', req.body.user.session, Buffer.alloc(16, 0))
+          .update(JSON.stringify(data), 'utf8', 'hex');
           // Convert the encrypted data to base64
-          const encryptedBase64 = encrypted.toString('base64');
+          const encryptedBase64 = encrypted.toString();
           // Send the encrypted data as a response
           originalSendFile(encryptedBase64);
         });

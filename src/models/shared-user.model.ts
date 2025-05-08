@@ -127,3 +127,13 @@ export interface refreshTokenRequestDTO {
   },
   refreshToken: string;
 }
+
+export interface SharedUserContextRequestDTO {
+  requestToUserInfo: {
+    id: string;
+  }
+  requestUrl: string;
+  requestBody: object;
+  requestMethod: string;
+  requestHeaders?: HeadersInit;
+}

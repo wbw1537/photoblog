@@ -193,4 +193,12 @@ model SharedUser {
   // Encryption keys
   sharedUserTempSymmetricKey String
   sharedUserPublicKey        String
+
+  // Token and session
+  accessToken            String?
+  accessTokenExpireTime  DateTime?
+  session                String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

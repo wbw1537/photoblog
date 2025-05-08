@@ -1,6 +1,6 @@
-import { Prisma, PrismaClient, SharedUserDirection, SharedUserStatus } from "@prisma/client";
+import { Prisma, PrismaClient, SharedUser, SharedUserDirection, SharedUserStatus } from "@prisma/client";
 
-import { SharedUserInitRemoteRequestDTO, SharedUserInitRespondDTO } from "../models/shared-user.model.js";
+import { SessionResponseDTO, SharedUserInitRemoteRequestDTO, SharedUserInitRespondDTO } from "../models/shared-user.model.js";
 
 export class SharedUserRepository {
   constructor(
@@ -128,5 +128,19 @@ export class SharedUserRepository {
         sharedUserPublicKey,
       },
     });
+  }
+
+  async updateTokenAndSession(sharedUser: SharedUser, sessionRespond: SessionResponseDTO) {
+    return await this.prismaClient.sharedUser.update({
+      where: {
+        id: sharedUser.id,
+      },
+      data: {
+        accessToken: sessionRespond.accessToken.token,
+        accessTokenExpireTime: new Date(sessionRespond.accessToken.expiresAt),
+        session: sessionRespond.session
+      },
+    });
+
   }
 }

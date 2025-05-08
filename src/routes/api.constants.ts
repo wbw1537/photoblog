@@ -45,11 +45,11 @@ export const API_URLS = {
     FETCH_REMOTE: '/v1/shared-user/fetch-remote',
     INIT: '/v1/shared-user/init',
     ACTIVE: '/v1/shared-user/active',
+    REQUEST: '/v1/shared-user/request',
     // Public endpoints
     PUBLIC_INIT: '/public/v1/shared-user/init',
     PUBLIC_EXCHANGE: '/public/v1/shared-user/exchange',
     PUBLIC_VALIDATE: '/public/v1/shared-user/validate',
     PUBLIC_SESSION: '/public/v1/shared-user/session',
-    PUBLIC_REFRESH_TOKEN: '/public/v1/shared-user/refresh-token',
   },
 };

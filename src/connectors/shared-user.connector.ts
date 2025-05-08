@@ -1,7 +1,7 @@
 import { SharedUser, User } from "@prisma/client";
 
 import { PhotoBlogError } from "../errors/photoblog.error.js";
-import { SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserValidateRequest } from "../models/shared-user.model.js";
+import { SessionRequestDTO, SessionResponseDTO, SharedUserContextRequestDTO, SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { PublicUsersResponseDTO } from "../models/user.model.js";
 import { API_URLS } from "../routes/api.constants.js"
 
@@ -70,7 +70,35 @@ export class SharedUserConnector {
     }
   }
 
-  async buildInitRemoteRequestBody(user: User, sharedUserInitRequest: SharedUserInitRequestDTO, tempPublicKey: string): Promise<SharedUserInitRemoteRequestDTO> {
+  async getSession(remoteAddress: string, requestBody: SessionRequestDTO) {
+    const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.PUBLIC_SESSION}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+    if (!response.ok) {
+      throw new PhotoBlogError(`Failed to get session: ${response.statusText}`, 500);
+    }
+    const responseData = await response.json();
+    return responseData as SessionResponseDTO;
+  }
+
+  async requestSharedUser(remoteAddress: string, sharedUserContextRequest: SharedUserContextRequestDTO) {
+    const response = await fetch(`${remoteAddress}/api/private/${sharedUserContextRequest.requestUrl}`, {
+      method: sharedUserContextRequest.requestMethod,
+      headers: sharedUserContextRequest.requestHeaders,
+      body: JSON.stringify(sharedUserContextRequest.requestBody),
+    });
+    if (!response.ok) {
+      throw new PhotoBlogError(`Failed to request shared user: ${response.statusText}`, 500);
+    }
+    const encryptedBase64 = await response.text();
+    return encryptedBase64;
+  }
+
+  buildInitRemoteRequestBody(user: User, sharedUserInitRequest: SharedUserInitRequestDTO, tempPublicKey: string): SharedUserInitRemoteRequestDTO {
     return {
       requestFromUserInfo: {
         id: user.id,
@@ -87,7 +115,7 @@ export class SharedUserConnector {
     };
   }
 
-  async buildExchangeKeyRequestBody(user: User, sharedUser: SharedUser, encryptedUserPublicKey: string): Promise<SharedUserExchangeKeyRequest> {
+  buildExchangeKeyRequestBody(user: User, sharedUser: SharedUser, encryptedUserPublicKey: string): SharedUserExchangeKeyRequest {
     return {
       requestToUserInfo: {
         id: user.id,
@@ -100,13 +128,26 @@ export class SharedUserConnector {
     };
   }
 
-  async buildValidateKeyRequestBody(user: User, sharedUser: SharedUser, signature: string): Promise<SharedUserValidateRequest> {
+  buildValidateKeyRequestBody(user: User, sharedUser: SharedUser, signature: string): SharedUserValidateRequest {
     return {
       requestFromUserInfo: {
         id: sharedUser.id,
       },
       requestToUserInfo: {
         id: user.id,
+      },
+      signature,
+      timestamp: Date.now(),
+    };
+  }
+
+  buildSessionRequestBody(user: User, sharedUserId: string, signature: string): SessionRequestDTO {
+    return {
+      requestFromUserInfo: {
+        id: user.id,
+      },
+      requestToUserInfo: {
+        id: sharedUserId,
       },
       signature,
       timestamp: Date.now(),
