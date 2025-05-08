@@ -1,9 +1,11 @@
 import { SharedUserDirection, SharedUserStatus } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 
-import { SharedUserExchangeKeyRequest, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserRequest, SharedUserValidateRequest } from "../models/shared-user.model.js";
+import { refreshTokenRequestDTO, SharedUserExchangeKeyRequest, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserRequest, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { SharedUserService } from "../services/shared-user.service.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
+import { SessionRequestDTO } from "../models/shared-user.model.js";
+import { TokenResponseDTO } from "../models/user.model.js";
 
 export class SharedUserController {
   constructor(
@@ -178,6 +180,55 @@ export class SharedUserController {
       res.status(200).json({ message: "Public key validated" });
     } catch (error: unknown) {
       next(error);
+    }
+  }
+
+  async getSession(req: Request, res: Response, next: NextFunction) {
+    try {
+      const sessionRequest: SessionRequestDTO = req.body;
+      if (!sessionRequest) {
+        res.status(400).json({ error: "Missing request body" });
+        return;
+      }
+      if (!sessionRequest.requestFromUserInfo || !sessionRequest.requestToUserInfo) {
+        res.status(400).json({ error: "Missing requestFromUserInfo or requestToUserInfo" });
+        return;
+      }
+      if (!sessionRequest.requestFromUserInfo.id || !sessionRequest.requestToUserInfo.id) {
+        res.status(400).json({ error: "Missing requestFromUserInfo.id or requestToUserInfo.id" });
+        return;
+      }
+      if (!sessionRequest.signature) {
+        res.status(400).json({ error: "Missing signature" });
+        return;
+      }
+      this.validateTimestamp(sessionRequest.timestamp);
+      const session = await this.sharedUserService.getSession(sessionRequest);
+      res.status(200).json(session);
+    } catch (err: unknown) {
+      next(err);
+    }
+  }
+
+  async refreshToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const refreshTokenRequestDTO: refreshTokenRequestDTO = req.body;
+      if (!refreshTokenRequestDTO.refreshToken || typeof refreshTokenRequestDTO.refreshToken !== 'string') {
+        res.status(400).json({ error: 'Refresh token is required' });
+        return;
+      }
+      if (!refreshTokenRequestDTO.requestFromUserInfo || !refreshTokenRequestDTO.requestToUserInfo) {
+        res.status(400).json({ error: "Missing requestFromUserInfo or requestToUserInfo" });
+        return;
+      }
+      if (!refreshTokenRequestDTO.requestFromUserInfo.id || !refreshTokenRequestDTO.requestToUserInfo.id) {
+        res.status(400).json({ error: "Missing requestFromUserInfo.id or requestToUserInfo.id" });
+        return;
+      }
+      const tokens: TokenResponseDTO = await this.sharedUserService.refreshToken(refreshTokenRequestDTO);
+      res.status(200).json(tokens);
+    } catch (err: unknown) {
+      next(err);
     }
   }
 

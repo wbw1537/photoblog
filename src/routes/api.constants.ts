@@ -5,6 +5,7 @@ export const API_URLS = {
     EMAIL_AVAILABILITY: '/v1/email-availability',
     USER_INFO: '/v1/user-info',
     REFRESH_TOKEN: '/v1/refresh-token',
+    // Public endpoints
     PUBLIC_USERS: '/public/v1/users',
   },
   TAG: {
@@ -39,5 +40,7 @@ export const API_URLS = {
     PUBLIC_INIT: '/public/v1/shared-user/init',
     PUBLIC_EXCHANGE: '/public/v1/shared-user/exchange',
     PUBLIC_VALIDATE: '/public/v1/shared-user/validate',
+    PUBLIC_SESSION: '/public/v1/shared-user/session',
+    PUBLIC_REFRESH_TOKEN: '/public/v1/shared-user/refresh-token',
   },
 };

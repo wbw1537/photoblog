@@ -52,11 +52,11 @@ export class SharedUserRepository {
     }
   }
 
-  async findById(userId: string, id: string) {
-    return await this.prismaClient.sharedUser.findUnique({
+  async findBySharedUserId(userId: string, sharedUserId: string) {
+    return await this.prismaClient.sharedUser.findFirst({
       where: {
         userId,
-        id,
+        sharedUserId,
       },
     });
   }

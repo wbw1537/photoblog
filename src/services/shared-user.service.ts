@@ -1,12 +1,13 @@
-import crypto from "crypto";
+import crypto, { randomBytes } from "crypto";
 import { Prisma, SharedUser, SharedUserDirection, SharedUserStatus, User } from "@prisma/client";
 
-import { SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest, SharedUserValidateRequest } from "../models/shared-user.model.js";
+import { refreshTokenRequestDTO, SessionRequestDTO, SessionResponseDTO, SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { SharedUserRepository } from "../repositories/shared-user.repository.js";
 import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
 import { PublicUsersResponseDTO } from "../models/user.model.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
+import { generateAccessTokenForSharedUser, generateRefreshTokenForSharedUser, shouldRenewRefreshTokenForSharedUser, verifySharedUserToken } from "../utils/jwt.util.js";
 
 export class SharedUserService {
   readonly DOCUMENT = 'Aureliano -dijo tristemente el manipulador-, está lloviendo en Macondo.';
@@ -98,7 +99,7 @@ export class SharedUserService {
       throw new PhotoBlogError("User not found", 404);
     }
     // Check if the shared user exists
-    const sharedUser = await this.sharedUserRepository.findById(userId, sharedUserId);
+    const sharedUser = await this.sharedUserRepository.findBySharedUserId(userId, sharedUserId);
     if (!sharedUser) {
       throw new PhotoBlogError("Shared user not found", 404);
     }
@@ -181,6 +182,88 @@ export class SharedUserService {
     await this.sharedUserRepository.activateSharedUser(sharedUser.id);
   }
 
+
+  async getSession(sessionRequest: SessionRequestDTO): Promise<SessionResponseDTO> {
+    // Check if the user exists
+    const user = await this.userRepository.findById(sessionRequest.requestToUserInfo.id);
+    if (!user) {
+      throw new PhotoBlogError('User not found', 404);
+    }
+    // Check if the remote user exists
+    const sharedUser = await this.sharedUserRepository.findBySharedUserId(user.id, sessionRequest.requestFromUserInfo.id);
+    if (!sharedUser) {
+      throw new PhotoBlogError('Shared user not found', 404);
+    }
+    // Check if the sharing status is Active
+    if (sharedUser.status !== SharedUserStatus.Active) {
+      throw new PhotoBlogError('Shared user is not active', 403);
+    }
+    // Validate the signature
+    const isValid = crypto
+      .createVerify("SHA256")
+      .update(this.DOCUMENT)
+      .verify(sharedUser.sharedUserPublicKey, sessionRequest.signature, "hex");
+    if (!isValid) {
+      throw new PhotoBlogError("Validate shared user's signature failed", 500);
+    }
+    // Create a session token, random string encrypted by the shared user's public key
+    const session = randomBytes(16).toString("hex");
+    const encryptedSession = crypto
+      .publicEncrypt(sharedUser.sharedUserPublicKey, Buffer.from(session))
+      .toString("hex");
+    // Create access token and refresh token for the user
+    const userWithSession = {
+      ...user,
+      session: encryptedSession,
+    }
+    const accessToken = generateAccessTokenForSharedUser(userWithSession, sharedUser.sharedUserPublicKey);
+    const refreshToken = generateRefreshTokenForSharedUser(user, sharedUser.sharedUserPublicKey);
+    // Create a response object
+    const response: SessionResponseDTO = {
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      session: encryptedSession
+    }
+    return response;
+  }
+
+  public async refreshToken(refreshTokenRequestDTO: refreshTokenRequestDTO): Promise<SessionResponseDTO> {
+    // Check if the user exists
+    const user = await this.userRepository.findById(refreshTokenRequestDTO.requestToUserInfo.id);
+    if (!user) {
+      throw new PhotoBlogError('User not found', 404);
+    }
+    // Check if the remote user exists
+    const sharedUser = await this.sharedUserRepository.findBySharedUserId(user.id, refreshTokenRequestDTO.requestFromUserInfo.id);
+    if (!sharedUser) {
+      throw new PhotoBlogError('Shared user not found', 404);
+    }
+    // Check if the sharing status is Active
+    if (sharedUser.status !== SharedUserStatus.Active) {
+      throw new PhotoBlogError('Shared user is not active', 403);
+    }
+    // Verify the refresh token
+    verifySharedUserToken(refreshTokenRequestDTO.refreshToken, sharedUser.sharedUserPublicKey);
+    const accessToken = generateAccessTokenForSharedUser(user, sharedUser.sharedUserPublicKey);
+    // Create a new session token
+    const session = randomBytes(16).toString("hex");
+    const encryptedSession = crypto
+      .publicEncrypt(sharedUser.sharedUserPublicKey, Buffer.from(session))
+      .toString("hex");
+    if (shouldRenewRefreshTokenForSharedUser(refreshTokenRequestDTO.refreshToken)) {
+      const newRefreshToken = generateRefreshTokenForSharedUser(user, sharedUser.sharedUserPublicKey);
+      return {
+        accessToken,
+        refreshToken: newRefreshToken,
+        session: encryptedSession
+      };
+    }
+    return {
+      accessToken,
+      session: encryptedSession
+    };
+  }
+
   private async checkSharedUserPendingStatus(userId: string, sharedUserId: string) {
     // Check if the user exists
     const user = await this.userRepository.findById(userId);
@@ -188,7 +271,7 @@ export class SharedUserService {
       throw new PhotoBlogError("User not found", 404);
     }
     // Check if the shared user exists
-    const sharedUser = await this.sharedUserRepository.findById(
+    const sharedUser = await this.sharedUserRepository.findBySharedUserId(
       user.id,
       sharedUserId
     );
@@ -209,7 +292,7 @@ export class SharedUserService {
   private generateTempKeys(): { tempPublicKey: string; tempPrivateKey: string } {
     // Generate a pair of x25519 keys
     const tempKeyPair = crypto.generateKeyPairSync('x25519');
-    
+
     // Export the keys as PEM strings
     const tempPublicKey = tempKeyPair.publicKey.export({ type: 'spki', format: 'pem' }).toString('utf8');
     const tempPrivateKey = tempKeyPair.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString('utf8');

@@ -1,5 +1,7 @@
 import { SharedUserDirection, SharedUserStatus } from "@prisma/client";
 
+import { TokenResponseDTO } from "./user.model.js";
+
 export interface SharedUserInitRequestDTO {
   requestToUserInfo: {
     id: string;
@@ -99,4 +101,29 @@ export interface SharedUserValidateRequest {
   }
   signature: string;
   timestamp: number;
+}
+
+export interface SessionResponseDTO extends TokenResponseDTO {
+  session: string;
+}
+
+export interface SessionRequestDTO {
+  requestFromUserInfo: {
+    id: string;
+  },
+  requestToUserInfo: {
+    id: string;
+  },
+  signature: string;
+  timestamp: number;
+}
+
+export interface refreshTokenRequestDTO {
+  requestFromUserInfo: {
+    id: string;
+  },
+  requestToUserInfo: {
+    id: string;
+  },
+  refreshToken: string;
 }

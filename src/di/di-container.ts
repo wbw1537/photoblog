@@ -8,6 +8,8 @@ import { BlogRepository } from '../repositories/blog.repository.js';
 import { TagRepository } from '../repositories/tag.repository.js';
 import { SharedUserRepository } from '../repositories/shared-user.repository.js';
 
+import { AuthMiddleware } from '../middleware/auth.middleware.js';
+
 import { ConvertPhotoJob } from '../jobs/convert-photo.job.js';
 import { PhotoScanJob } from '../jobs/photo-scan.job.js';
 
@@ -51,6 +53,11 @@ const sharedUserRepository = new SharedUserRepository(prismaClient);
 
 const scanStatusService = new ScanStatusService();
 
+// Middleware layer instances
+const authMiddleware = new AuthMiddleware(logger, sharedUserRepository);
+const authenticate = authMiddleware.authenticate;
+const authenticateSharedUser = authMiddleware.authenticateSharedUser;
+
 // Job layer instances
 const convertPhotoJob = new ConvertPhotoJob(logger);
 const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFileRepository, scanStatusService, convertPhotoJob, logger);
@@ -80,6 +87,8 @@ const sharedUserController = new SharedUserController(sharedUserService);
 
 // Export all initialized instances
 export {
+  authenticate,
+  authenticateSharedUser,
   userController,
   photoScanController,
   scanStatusController,
