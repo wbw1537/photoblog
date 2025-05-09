@@ -2,8 +2,9 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import log4js from "log4js";
 
 import { User } from '@prisma/client';
-import { Token } from '../models/user.model.js';
+import { Token, UserResponseDTO } from '../models/user.model.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
+import { UserJwtPayloadWithSession } from '../models/shared-user.model.js';
 
 
 const logger = log4js.getLogger();
@@ -11,12 +12,11 @@ const logger = log4js.getLogger();
 const JWT_SECRET = process.env.JWT_SECRET || 'jwt_secret';
 const ACCESS_TOKEN_EXPIRATION = '30m'; // 30 minutes
 const REFRESH_TOKEN_EXPIRATION = '14d'; // 2 weeks
-const REFRESH_TOKEN_EXPIRATION_FOR_SHARED_USER = '2d'; // 2 days
 
 const RENEW_REFRESH_TOKEN_TIME_SLOT = 7 * 24 * 60 * 60 * 1000; // 7 days
 const SHARED_USER_RENEW_REFRESH_TOKEN_TIME_SLOT = 1 * 24 * 60 * 60 * 1000; // 1 days
 
-export function generateUtilizedToken(sign: object, expiresIn: string, jwtSecret: string): Token {
+function generateUtilizedToken(sign: object, expiresIn: string, jwtSecret: string): Token {
   const token = jwt.sign(sign, jwtSecret, { expiresIn: expiresIn });
   const expiresAt = convertExpireInToMillis(expiresIn) + Date.now();
 
@@ -28,19 +28,43 @@ export function generateUtilizedToken(sign: object, expiresIn: string, jwtSecret
 }
 
 export function generateAccessToken(user: User): Token {
-  return generateUtilizedToken(user, ACCESS_TOKEN_EXPIRATION, JWT_SECRET);
+  const userPayload: UserResponseDTO = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    type: user.type,
+    address: user.address,
+    basePath: user.basePath,
+    cachePath: user.cachePath
+  };
+  return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, JWT_SECRET);
 }
 
-export function generateAccessTokenForSharedUser(sign: object, jwtSecret: string): Token {
-  return generateUtilizedToken(sign, ACCESS_TOKEN_EXPIRATION, jwtSecret);
+export function generateAccessTokenForSharedUser(userWithSession: UserJwtPayloadWithSession, jwtSecret: string): Token {
+  const userPayload: UserJwtPayloadWithSession = {
+    id: userWithSession.id,
+    name: userWithSession.name,
+    email: userWithSession.email,
+    type: userWithSession.type,
+    address: userWithSession.address,
+    basePath: userWithSession.basePath,
+    cachePath: userWithSession.cachePath,
+    session: userWithSession.session
+  };
+  return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, jwtSecret);
 }
 
 export function generateRefreshToken(user: User): Token {
-  return generateUtilizedToken(user, REFRESH_TOKEN_EXPIRATION, JWT_SECRET);
-}
-
-export function generateRefreshTokenForSharedUser(user: User, jwtSecret: string): Token {
-  return generateUtilizedToken(user, REFRESH_TOKEN_EXPIRATION_FOR_SHARED_USER, jwtSecret);
+  const userPayload: UserResponseDTO = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    type: user.type,
+    address: user.address,
+    basePath: user.basePath,
+    cachePath: user.cachePath
+  };
+  return generateUtilizedToken(userPayload, REFRESH_TOKEN_EXPIRATION, JWT_SECRET);
 }
 
 export function verifyUtilizedToken(token: string, jwtSecret: string): User {

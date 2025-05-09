@@ -12,6 +12,7 @@ export interface UserResponseDTO {
   name: string;
   email: string;
   type: UserType;
+  address: string;
   basePath: string;
   cachePath: string;
 }
