@@ -107,14 +107,14 @@ export class SharedUserService {
     return response;
   }
 
-  async setSharedUserActive(userId: string, sharedUserId: string) {
+  async setSharedUserActive(userId: string, id: string) {
     // Get user
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new PhotoBlogError("User not found", 404);
     }
     // Check if the shared user exists
-    const sharedUser = await this.sharedUserRepository.findBySharedUserId(userId, sharedUserId);
+    const sharedUser = await this.sharedUserRepository.findById(id);
     if (!sharedUser) {
       throw new PhotoBlogError("Shared user not found", 404);
     }
@@ -147,9 +147,9 @@ export class SharedUserService {
     return response;
   }
 
-  async setSharedUserBlocked(userId: string, sharedUserId: string) {
+  async setSharedUserBlocked(userId: string, id: string) {
     // Check if the shared user exists
-    const sharedUser = await this.sharedUserRepository.findBySharedUserId(userId, sharedUserId);
+    const sharedUser = await this.sharedUserRepository.findById(id);
     if (!sharedUser) {
       throw new PhotoBlogError("Shared user not found", 404);
     }
