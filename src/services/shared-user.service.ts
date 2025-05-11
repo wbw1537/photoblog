@@ -397,6 +397,7 @@ export class SharedUserService {
       sharedUser.sharedUserAddress,
       requestBody
     ) as SharedUserExchangeKeyRespond;
+    this.logger.debug(`Response from shared user: ${JSON.stringify(response)}`);
     const decryptedResponsePublicKey = this.decryptPublicKey(
       sharedUserTempSymmetricKey, response.encryptedPublicKey)
     const isValid = this.validSignature(decryptedResponsePublicKey, response.signature);
@@ -444,18 +445,22 @@ export class SharedUserService {
     return result;
   }
 
-  private decryptPublicKey(sharedUserTempSymmetricKey: string, encryptedPublicKey: string) {
+  private decryptPublicKey(sharedUserTempSymmetricKey: string, encryptedPublicKey: string): string {
+    // Convert the base64 key to a Buffer
     const keyBuffer = Buffer.from(sharedUserTempSymmetricKey, 'base64');
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createDecipheriv("aes-256-cbc", keyBuffer, iv);
-
-    // Encrypt the userPublicKey
-    let encrypted = cipher.update(encryptedPublicKey, "utf-8", "hex");
-    encrypted += cipher.final("hex");
-    // Prepend the IV to the encrypted data
-    const result = iv.toString('hex') + encrypted;
-
-    return result;
+  
+    // Extract the IV from the first 32 characters (16 bytes) of the encrypted data
+    const iv = Buffer.from(encryptedPublicKey.slice(0, 32), 'hex');
+    // The actual encrypted data starts after the IV
+    const encryptedData = encryptedPublicKey.slice(32);
+    // Create the decipher
+    const decipher = crypto.createDecipheriv("aes-256-cbc", keyBuffer, iv);
+  
+    // Decrypt the data
+    let decrypted = decipher.update(encryptedData, "hex", "utf-8");
+    decrypted += decipher.final("utf-8");
+  
+    return decrypted;
   }
 
   private validSignature(publicKey: string, signature: string) {
