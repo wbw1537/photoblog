@@ -475,7 +475,7 @@ export class SharedUserService {
   private createPublicEncryptedSession(publicKey: string, session: string) {
     return crypto
       .publicEncrypt(publicKey, Buffer.from(session))
-      .toString("hex");
+      .toString("base64");
   }
 
   private decryptSession(userPrivateKey: string, session: string): string {
