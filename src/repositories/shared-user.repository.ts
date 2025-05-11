@@ -116,6 +116,19 @@ export class SharedUserRepository {
     });
   }
 
+  async blockSharedUser(
+    id: string,
+  ) {
+    return await this.prismaClient.sharedUser.update({
+      where: {
+        id,
+      },
+      data: {
+        status: SharedUserStatus.Blocked,
+      },
+    });
+  }
+
   async updateSharedUserPublicKey(
     id: string,
     sharedUserPublicKey: string,

@@ -18,6 +18,9 @@ sharedUserRouter.post(API_URLS.SHARED_USER.INIT, authenticate, (req, res, next) 
 sharedUserRouter.post(API_URLS.SHARED_USER.ACTIVE, authenticate, (req, res, next) => 
   sharedUserController.setSharedUserActive(req, res, next));
 
+sharedUserRouter.post(API_URLS.SHARED_USER.BLOCK, authenticate, (req, res, next) =>
+  sharedUserController.setSharedUserBlocked(req, res, next));
+
 sharedUserRouter.post(API_URLS.SHARED_USER.REQUEST, authenticate, (req, res, next) =>
   sharedUserController.requestSharedUser(req, res, next));
 

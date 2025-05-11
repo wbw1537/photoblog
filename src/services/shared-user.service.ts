@@ -108,7 +108,7 @@ export class SharedUserService {
   }
 
   async setSharedUserActive(userId: string, sharedUserId: string) {
-    // Check if the user exists
+    // Get user
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new PhotoBlogError("User not found", 404);
@@ -132,9 +132,44 @@ export class SharedUserService {
       await this.validateKeys(user, sharedUser);
     }
     // Update the shared user status to active
-    return await this.sharedUserRepository.activateSharedUser(
+    const activeSharedUser = await this.sharedUserRepository.activateSharedUser(
       sharedUser.id
     );
+    const response: SharedUserInfo = {
+      id: activeSharedUser.id,
+      name: activeSharedUser.sharedUserName,
+      email: activeSharedUser.sharedUserEmail,
+      remoteAddress: activeSharedUser.sharedUserAddress,
+      status: activeSharedUser.status,
+      direction: activeSharedUser.direction,
+      comment: activeSharedUser.comment,
+    }
+    return response;
+  }
+
+  async setSharedUserBlocked(userId: string, sharedUserId: string) {
+    // Check if the shared user exists
+    const sharedUser = await this.sharedUserRepository.findBySharedUserId(userId, sharedUserId);
+    if (!sharedUser) {
+      throw new PhotoBlogError("Shared user not found", 404);
+    }
+    // Check if current status is already blocked
+    if (sharedUser.status === SharedUserStatus.Blocked) {
+      throw new PhotoBlogError("Shared user is already blocked", 400);
+    }
+    const blockedSharedUser = await this.sharedUserRepository.blockSharedUser(
+      sharedUser.id
+    );
+    const response: SharedUserInfo = {
+      id: blockedSharedUser.id,
+      name: blockedSharedUser.sharedUserName,
+      email: blockedSharedUser.sharedUserEmail,
+      remoteAddress: blockedSharedUser.sharedUserAddress,
+      status: blockedSharedUser.status,
+      direction: blockedSharedUser.direction,
+      comment: blockedSharedUser.comment,
+    }
+    return response;
   }
 
   async exchangeRemotePublicKey(sharedUserExchangeKeyRequest: SharedUserExchangeKeyRequest) {
@@ -431,14 +466,6 @@ export class SharedUserService {
     let decrypted = decipher.update(encryptedResponse, "hex", "utf-8");
     decrypted += decipher.final("utf-8");
     return decrypted;
-  }
-
-  private createSessionEncryptedBody(session: string, body: object) {
-    const iv = randomBytes(16);
-    const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(session), iv);
-    let encrypted = cipher.update(JSON.stringify(body), "utf-8", "hex");
-    encrypted += cipher.final("hex");
-    return { iv: iv.toString("hex"), encryptedData: encrypted };
   }
 
   private async updateTokenValidity(user: User, sharedUser: SharedUser) {
