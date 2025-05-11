@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticate, authenticateSharedUser, encrypt } from '../di/di-container.js';
+import { authenticate, encrypt } from '../di/di-container.js';
 import { API_URLS } from './api.constants.js';
 
 import { photoController } from '../di/di-container.js';
@@ -19,10 +19,10 @@ photoRouter.delete(API_URLS.PHOTO.LIKE, authenticate, (req, res, next) =>
   photoController.unlikePhoto(req, res, next));
 
 // Private routes
-photoRouter.get(API_URLS.PHOTO.PRIVATE_BASE, authenticateSharedUser, encrypt, (req, res, next) => 
+photoRouter.get(API_URLS.PHOTO.PRIVATE_BASE, authenticate, encrypt, (req, res, next) => 
   photoController.getPhotos(req, res, next));
 
-photoRouter.get(API_URLS.PHOTO.PRIVATE_BY_ID, authenticateSharedUser, encrypt, (req, res, next) => 
+photoRouter.get(API_URLS.PHOTO.PRIVATE_BY_ID, authenticate, encrypt, (req, res, next) => 
   photoController.getPhotoById(req, res, next));
 
 export default photoRouter;

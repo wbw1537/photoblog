@@ -55,9 +55,8 @@ const sharedUserRepository = new SharedUserRepository(prismaClient);
 const scanStatusService = new ScanStatusService();
 
 // Middleware layer instances
-const authMiddleware = new AuthMiddleware(logger, sharedUserRepository);
+const authMiddleware = new AuthMiddleware(logger);
 const authenticate = authMiddleware.authenticate;
-const authenticateSharedUser = authMiddleware.authenticateSharedUser;
 const encryptionMiddleware = new EncryptionMiddleware();
 const encrypt = encryptionMiddleware.encrypt;
 
@@ -92,7 +91,6 @@ const sharedUserController = new SharedUserController(sharedUserService);
 // Export all initialized instances
 export {
   authenticate,
-  authenticateSharedUser,
   encrypt,
   userController,
   photoScanController,

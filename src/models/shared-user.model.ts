@@ -132,6 +132,9 @@ export interface SharedUserContextRequestDTO {
   requestToUserInfo: {
     id: string;
   }
+  requestFromUserInfo?: {
+    id: string;
+  }
   requestUrl: string;
   requestBody: object;
   requestMethod: string;

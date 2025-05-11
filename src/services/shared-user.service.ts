@@ -7,7 +7,7 @@ import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
 import { PublicUserResponseDTO } from "../models/user.model.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
-import { generateAccessTokenForSharedUser } from "../utils/jwt.util.js";
+import { generateAccessToken, generateAccessTokenForSharedUser } from "../utils/jwt.util.js";
 import { Logger } from "log4js";
 
 export class SharedUserService {
@@ -264,7 +264,7 @@ export class SharedUserService {
       ...user,
       session: encryptedSession,
     }
-    const accessToken = generateAccessTokenForSharedUser(userWithSession, sharedUser.sharedUserPublicKey);
+    const accessToken = generateAccessToken(userWithSession);
     // Create a response object
     const response: SessionResponseDTO = {
       accessToken: accessToken,
@@ -295,6 +295,7 @@ export class SharedUserService {
       ...sharedUserContextRequest.requestHeaders,
       "Authorization": `Bearer ${accessToken}`,
     }
+    sharedUserContextRequest
     // const encryptedBody = this.createSessionEncryptedBody(session, sharedUserContextRequest.requestBody);
     // sharedUserContextRequest.requestBody = encryptedBody;
     // Send the request to the shared user
