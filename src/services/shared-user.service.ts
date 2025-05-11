@@ -59,7 +59,7 @@ export class SharedUserService {
 
   async initRemoteSharingRequest(sharedUserRequest: SharedUserInitRemoteRequestDTO): Promise<SharedUserInitRespondDTO> {
     // check if the user exists
-    const user = await this.userRepository.findById(sharedUserRequest.requestFromUserInfo.id);
+    const user = await this.userRepository.findById(sharedUserRequest.requestToUserInfo.id);
     if (!user) {
       throw new PhotoBlogError("User not found", 404);
     }
