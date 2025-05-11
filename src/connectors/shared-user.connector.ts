@@ -110,7 +110,7 @@ export class SharedUserConnector {
       this.logger.error(`Failed to request shared user: ${response.statusText}, ${requestUrl}`);
       throw new PhotoBlogError(`Failed to request shared user: ${response.statusText}`, 500);
     }
-    const encryptedBase64 = await response.text();
+    const encryptedBase64 = await response.json();
     return encryptedBase64;
   }
 
