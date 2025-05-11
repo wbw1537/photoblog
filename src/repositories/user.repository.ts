@@ -1,6 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, UserType } from "@prisma/client";
 
-import { CreateUserDTO } from "../models/user.model.js";
+import { CreateUserDTO, ModifyUserInfoRequestDTO } from "../models/user.model.js";
 
 export class UserRepository {
   constructor(
@@ -54,14 +54,32 @@ export class UserRepository {
   }
 
   async create(user: CreateUserDTO, publicKey: string, privateKey: string) {
+    // The first user is the admin
+    const isFirstUser = await this.prismaClient.user.count() === 0;
+    const userType = isFirstUser ? UserType.Admin : UserType.Pending;
     return await this.prismaClient.user.create({
       data: {
         name: user.name,
         password: user.password,
         email: user.email,
+        type: userType,
         publicKey,
         privateKey,
       },
+    });
+  }
+
+  async update(id: string, user: Partial<ModifyUserInfoRequestDTO>) {
+    return await this.prismaClient.user.update({
+      where: { id },
+      data: {
+        name: user.name,
+        email: user.email,
+        password: user.password,
+        address: user.address,
+        basePath: user.basePath,
+        cachePath: user.cachePath,
+      }
     });
   }
 }

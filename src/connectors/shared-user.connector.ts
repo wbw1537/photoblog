@@ -2,7 +2,7 @@ import { SharedUser, User } from "@prisma/client";
 
 import { PhotoBlogError } from "../errors/photoblog.error.js";
 import { SessionRequestDTO, SessionResponseDTO, SharedUserContextRequestDTO, SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserValidateRequest } from "../models/shared-user.model.js";
-import { PublicUsersResponseDTO } from "../models/user.model.js";
+import { PublicUserResponseDTO } from "../models/user.model.js";
 import { API_URLS } from "../routes/api.constants.js"
 
 export class SharedUserConnector {
@@ -18,7 +18,7 @@ export class SharedUserConnector {
     if (!remoteUsers.ok) {
       throw new PhotoBlogError(`Failed to fetch remote users: ${remoteUsers.statusText}`, 500);
     }
-    const remoteUsersData = await remoteUsers.json() as PublicUsersResponseDTO;
+    const remoteUsersData = await remoteUsers.json() as PublicUserResponseDTO;
     return remoteUsersData;
   }
 

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
-import { CreateUserDTO, TokenResponseDTO } from "../models/user.model.js";
+import { CreateUserDTO, ModifyUserInfoRequestDTO, TokenResponseDTO } from "../models/user.model.js";
 import { UserService } from "../services/user.service.js";
 
 export class UserController {
@@ -49,6 +49,17 @@ export class UserController {
     try {
       const userId = req.body.user.id;
       const user = await this.userService.getUserInfo(userId);
+      res.status(200).json(user);
+    } catch (err: unknown) {
+      next(err);
+    }
+  }
+
+  async modifyUserInfo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.body.user.id;
+      const modifyRequest: ModifyUserInfoRequestDTO = req.body;
+      const user = await this.userService.modifyUserInfo(userId, modifyRequest);
       res.status(200).json(user);
     } catch (err: unknown) {
       next(err);

@@ -5,7 +5,7 @@ import { SessionRequestDTO, SessionResponseDTO, SharedUserContextRequestDTO, Sha
 import { SharedUserRepository } from "../repositories/shared-user.repository.js";
 import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
-import { PublicUsersResponseDTO } from "../models/user.model.js";
+import { PublicUserResponseDTO } from "../models/user.model.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
 import { generateAccessTokenForSharedUser } from "../utils/jwt.util.js";
 
@@ -23,7 +23,7 @@ export class SharedUserService {
     return await this.sharedUserRepository.findAllByFilter(sharedUserRequest.skip, sharedUserRequest.take, whereInput);
   }
 
-  async fetchRemoteUsers(remoteAddress: string): Promise<PublicUsersResponseDTO> {
+  async fetchRemoteUsers(remoteAddress: string): Promise<PublicUserResponseDTO> {
     // Fetch all remote users from the database
     const remoteUsers = await this.sharedUserConnector.getRemoteUsers(remoteAddress);
     return remoteUsers;

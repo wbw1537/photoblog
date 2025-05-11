@@ -2,7 +2,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import log4js from "log4js";
 
 import { User } from '@prisma/client';
-import { Token, UserResponseDTO } from '../models/user.model.js';
+import { Token, UserInfoDTO } from '../models/user.model.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 import { UserJwtPayloadWithSession } from '../models/shared-user.model.js';
 
@@ -28,7 +28,7 @@ function generateUtilizedToken(sign: object, expiresIn: string, jwtSecret: strin
 }
 
 export function generateAccessToken(user: User): Token {
-  const userPayload: UserResponseDTO = {
+  const userPayload: UserInfoDTO = {
     id: user.id,
     name: user.name,
     email: user.email,
@@ -55,7 +55,7 @@ export function generateAccessTokenForSharedUser(userWithSession: UserJwtPayload
 }
 
 export function generateRefreshToken(user: User): Token {
-  const userPayload: UserResponseDTO = {
+  const userPayload: UserInfoDTO = {
     id: user.id,
     name: user.name,
     email: user.email,

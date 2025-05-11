@@ -7,7 +7,7 @@ export interface CreateUserDTO {
   address?: string;
 }
 
-export interface UserResponseDTO {
+export interface UserInfoDTO {
   id: string;
   name: string;
   email: string;
@@ -17,18 +17,27 @@ export interface UserResponseDTO {
   cachePath: string;
 }
 
-export interface PublicUsersResponseDTO {
-  users: UserInfoDTO[];
+export interface ModifyUserInfoRequestDTO {
+  name?: string;
+  email?: string;
+  password?: string;
+  address?: string;
+  basePath?: string;
+  cachePath?: string;
 }
 
-export interface UserInfoDTO {
+export interface PublicUserResponseDTO {
+  users: PublicUserInfoDTO[];
+}
+
+export interface PublicUserInfoDTO {
   id: string;
   name: string;
   email: string;
   address: string;
 }
 
-export interface UserLoginResponseDTO extends UserResponseDTO {
+export interface UserLoginResponseDTO extends UserInfoDTO {
   accessToken: Token;
   refreshToken: Token;
 }

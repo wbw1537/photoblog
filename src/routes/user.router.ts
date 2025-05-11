@@ -15,8 +15,11 @@ userRouter.post(API_URLS.USER.LOGIN, (req, res, next) =>
 userRouter.post(API_URLS.USER.EMAIL_AVAILABILITY, (req, res, next) => 
   userController.checkUserExists(req, res, next));
 
-userRouter.post(API_URLS.USER.USER_INFO, authenticate, (req, res, next) => 
+userRouter.get(API_URLS.USER.USER_INFO, authenticate, (req, res, next) => 
   userController.getUserInfo(req, res, next));
+
+userRouter.post(API_URLS.USER.USER_INFO, authenticate, (req, res, next) => 
+  userController.modifyUserInfo(req, res, next));
 
 userRouter.post(API_URLS.USER.REFRESH_TOKEN, (req, res, next) => 
   userController.refreshToken(req, res, next));

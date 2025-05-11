@@ -1,6 +1,6 @@
 import { SharedUserDirection, SharedUserStatus } from "@prisma/client";
 
-import { TokenResponseDTO, UserResponseDTO } from "./user.model.js";
+import { TokenResponseDTO, UserInfoDTO } from "./user.model.js";
 
 export interface SharedUserInitRequestDTO {
   requestToUserInfo: {
@@ -138,6 +138,6 @@ export interface SharedUserContextRequestDTO {
   requestHeaders?: HeadersInit;
 }
 
-export interface UserJwtPayloadWithSession extends UserResponseDTO {
+export interface UserJwtPayloadWithSession extends UserInfoDTO {
   session: string;
 }
