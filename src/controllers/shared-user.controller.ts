@@ -245,7 +245,17 @@ export class SharedUserController {
         return;
       }
       const response = await this.sharedUserService.requestSharedUser(userId, sharedUserContextRequest);
-      res.status(200).json(response);
+      if (response && typeof response.arrayBuffer === 'function' && typeof response.headers === 'object') {
+        // This is likely a Fetch API Response object
+        const contentType = response.headers.get('Content-Type');
+        res.set('Content-Type', contentType);
+        
+        const arrayBuffer = await response.arrayBuffer();
+        res.send(Buffer.from(arrayBuffer));
+      } else {
+        // This is for JSON responses
+        res.status(200).json(response);
+      }
     } catch (error: unknown) {
       next(error);
     }
