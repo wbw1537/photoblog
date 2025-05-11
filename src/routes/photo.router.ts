@@ -19,10 +19,10 @@ photoRouter.delete(API_URLS.PHOTO.LIKE, authenticate, (req, res, next) =>
   photoController.unlikePhoto(req, res, next));
 
 // Private routes
-photoRouter.get(API_URLS.PHOTO.PUBLIC_BASE, authenticateSharedUser, encrypt, (req, res, next) => 
+photoRouter.get(API_URLS.PHOTO.PRIVATE_BASE, authenticateSharedUser, encrypt, (req, res, next) => 
   photoController.getPhotos(req, res, next));
 
-photoRouter.get(API_URLS.PHOTO.PUBLIC_BY_ID, authenticateSharedUser, encrypt, (req, res, next) => 
+photoRouter.get(API_URLS.PHOTO.PRIVATE_BY_ID, authenticateSharedUser, encrypt, (req, res, next) => 
   photoController.getPhotoById(req, res, next));
 
 export default photoRouter;

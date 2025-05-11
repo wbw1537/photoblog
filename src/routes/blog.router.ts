@@ -16,10 +16,10 @@ blogRouter.post(API_URLS.BLOG.BASE, authenticate, (req, res, next) =>
   blogController.postBlog(req, res, next));
 
 // Private routes
-blogRouter.get(API_URLS.BLOG.PUBLIC_BASE, authenticateSharedUser, encrypt, (req, res, next) => 
+blogRouter.get(API_URLS.BLOG.PRIVATE_BASE, authenticateSharedUser, encrypt, (req, res, next) => 
   blogController.getBlogs(req, res, next));
 
-blogRouter.get(API_URLS.BLOG.PUBLIC_BY_ID, authenticateSharedUser, encrypt, (req, res, next) => 
+blogRouter.get(API_URLS.BLOG.PRIVATE_BY_ID, authenticateSharedUser, encrypt, (req, res, next) => 
   blogController.getBlogById(req, res, next));
 
 export default blogRouter;

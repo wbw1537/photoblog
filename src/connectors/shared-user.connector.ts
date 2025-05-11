@@ -100,7 +100,7 @@ export class SharedUserConnector {
   }
 
   async requestSharedUser(remoteAddress: string, sharedUserContextRequest: SharedUserContextRequestDTO) {
-    const requestUrl = `http://${remoteAddress}/api/private/${sharedUserContextRequest.requestUrl}`;
+    const requestUrl = `http://${remoteAddress}/api/private${sharedUserContextRequest.requestUrl}`;
     const response = await fetch(requestUrl, {
       method: sharedUserContextRequest.requestMethod,
       headers: sharedUserContextRequest.requestHeaders,

@@ -13,10 +13,10 @@ photoFileRouter.get(API_URLS.PHOTO_FILE.PREVIEW, authenticate, (req, res, next) 
   photoFileController.getPreviewPhotoFileById(req, res, next));
 
 // Private routes
-photoFileRouter.get(API_URLS.PHOTO_FILE.PUBLIC_VIEW, authenticateSharedUser, encrypt, (req, res, next) => 
+photoFileRouter.get(API_URLS.PHOTO_FILE.PRIVATE_VIEW, authenticateSharedUser, encrypt, (req, res, next) => 
   photoFileController.getPhotoFileImageById(req, res, next));
 
-photoFileRouter.get(API_URLS.PHOTO_FILE.PUBLIC_PREVIEW, authenticateSharedUser, encrypt, (req, res, next) => 
+photoFileRouter.get(API_URLS.PHOTO_FILE.PRIVATE_PREVIEW, authenticateSharedUser, encrypt, (req, res, next) => 
   photoFileController.getPreviewPhotoFileById(req, res, next));
 
 export default photoFileRouter;
