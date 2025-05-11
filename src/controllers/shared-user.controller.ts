@@ -244,8 +244,8 @@ export class SharedUserController {
         res.status(400).json({ error: "Missing requestMethod" });
         return;
       }
-      await this.sharedUserService.requestSharedUser(userId, sharedUserContextRequest);
-      res.status(200).json({ message: "Shared user requested" });
+      const response = await this.sharedUserService.requestSharedUser(userId, sharedUserContextRequest);
+      res.status(200).json(response);
     } catch (error: unknown) {
       next(error);
     }
