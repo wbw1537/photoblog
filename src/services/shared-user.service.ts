@@ -256,8 +256,10 @@ export class SharedUserService {
     }
     // Create a session token, random string encrypted by the shared user's public key
     const session = randomBytes(16).toString("hex");
+    this.logger.debug(`Session ${session} was created for sharedUser ${sharedUser.id}`);
     const encryptedSession = this.createPublicEncryptedSession(sharedUser.sharedUserPublicKey, session);
-    // Create access token and refresh token for the user
+    this.logger.debug(`Encrypted session ${encryptedSession} was created for sharedUser ${sharedUser.id}`);
+    // Create access token for the user
     const userWithSession = {
       ...user,
       session: encryptedSession,
@@ -498,6 +500,7 @@ export class SharedUserService {
       const signature = this.createSignature(user.privateKey);
       const sessionRequest: SessionRequestDTO = this.sharedUserConnector.buildSessionRequestBody(user, sharedUser.sharedUserId, signature);
       const sessionRespond = await this.sharedUserConnector.getSession(sharedUser.sharedUserAddress, sessionRequest);
+      this.logger.debug(`Session response: ${JSON.stringify(sessionRespond)}`);
       const decryptedSession = this.decryptSession(user.privateKey, sessionRespond.session);
       sessionRespond.session = decryptedSession;
       await this.sharedUserRepository.updateTokenAndSession(sharedUser, sessionRespond)
