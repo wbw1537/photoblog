@@ -339,6 +339,8 @@ export class SharedUserService {
     return { tempPublicKey, tempPrivateKey };
   }
 
+  // Generate a shared symmetric key using the private key and public key
+  // Returns the symmetric key in base64 format
   private generateSharedSymmetricKey(tempPrivateKey: string, remotePublicKey: string): string {
     // Convert keys from PEM format to buffers
     const privateKey = crypto.createPrivateKey({ key: tempPrivateKey, format: "pem" });
@@ -351,9 +353,8 @@ export class SharedUserService {
     });
 
     // Hash the shared secret to generate a symmetric key
-    const symmetricKey = crypto.createHash("sha256").update(sharedSecret).digest("hex");
-
-    return symmetricKey;
+    const symmetricKey = crypto.createHash("sha256").update(sharedSecret).digest();
+    return symmetricKey.toString("base64");
   }
 
   private buildWhereInput(userId: string, sharedUserRequest: SharedUserRequest) {
@@ -395,9 +396,8 @@ export class SharedUserService {
       sharedUser.sharedUserAddress,
       requestBody
     ) as SharedUserExchangeKeyRespond;
-    const decryptedResponsePublicKey = crypto
-      .createDecipheriv("aes-256-cbc", sharedUserTempSymmetricKey, Buffer.alloc(16, 0))
-      .update(response.encryptedPublicKey, "hex", "utf-8");
+    const decryptedResponsePublicKey = this.decryptPublicKey(
+      sharedUserTempSymmetricKey, response.encryptedPublicKey)
     const isValid = this.validSignature(decryptedResponsePublicKey, response.signature);
     if (!isValid) {
       throw new PhotoBlogError("Validate shared user's signature failed", 500);
@@ -427,15 +427,31 @@ export class SharedUserService {
   }
 
   private createCipherivPublicKey(sharedUserTempSymmetricKey: string, userPublicKey: string) {
-    return crypto
-      .createCipheriv("aes-256-cbc", sharedUserTempSymmetricKey, Buffer.alloc(16, 0))
-      .update(userPublicKey, "utf-8", "hex");
+    const keyBuffer = Buffer.from(sharedUserTempSymmetricKey, 'base64');
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv("aes-256-cbc", keyBuffer, iv);
+
+    // Encrypt the userPublicKey
+    let encrypted = cipher.update(userPublicKey, "utf-8", "hex");
+    encrypted += cipher.final("hex");
+    // Prepend the IV to the encrypted data
+    const result = iv.toString('hex') + encrypted;
+
+    return result;
   }
 
   private decryptPublicKey(sharedUserTempSymmetricKey: string, encryptedPublicKey: string) {
-    return crypto
-      .createDecipheriv("aes-256-cbc", sharedUserTempSymmetricKey, Buffer.alloc(16, 0))
-      .update(encryptedPublicKey, "hex", "utf-8");
+    const keyBuffer = Buffer.from(sharedUserTempSymmetricKey, 'base64');
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createDecipheriv("aes-256-cbc", keyBuffer, iv);
+    
+    // Encrypt the userPublicKey
+    let encrypted = cipher.update(encryptedPublicKey, "utf-8", "hex");
+    encrypted += cipher.final("hex");
+    // Prepend the IV to the encrypted data
+    const result = iv.toString('hex') + encrypted;
+
+    return result;
   }
 
   private validSignature(publicKey: string, signature: string) {
