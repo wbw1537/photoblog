@@ -4,18 +4,40 @@ export interface CreateUserDTO {
   name: string;
   password: string;
   email: string;
+  address?: string;
 }
 
-export interface UserResponseDTO {
+export interface UserInfoDTO {
   id: string;
   name: string;
   email: string;
   type: UserType;
+  address: string;
   basePath: string;
   cachePath: string;
 }
 
-export interface UserLoginResponseDTO extends UserResponseDTO {
+export interface ModifyUserInfoRequestDTO {
+  name?: string;
+  email?: string;
+  password?: string;
+  address?: string;
+  basePath?: string;
+  cachePath?: string;
+}
+
+export interface PublicUserResponseDTO {
+  users: PublicUserInfoDTO[];
+}
+
+export interface PublicUserInfoDTO {
+  id: string;
+  name: string;
+  email: string;
+  address: string;
+}
+
+export interface UserLoginResponseDTO extends UserInfoDTO {
   accessToken: Token;
   refreshToken: Token;
 }

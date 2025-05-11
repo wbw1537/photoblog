@@ -23,4 +23,14 @@ export class PhotoFileController {
       next(error);
     }
   }
+
+  getPreviewPhotoFileById(req: Request, res: Response, next: NextFunction) {
+    const user = req.body.user;
+    const fileId = req.params.fileId;
+    const resolution = FileResolution.PREVIEW;
+
+    this.photoFileService.getPhotoFileImageById(user, fileId as string, resolution)
+      .then(photoPath => res.sendFile(photoPath))
+      .catch(error => next(error));
+  }
 }
