@@ -40,7 +40,7 @@ export function generateAccessToken(user: User): Token {
   return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, JWT_SECRET);
 }
 
-export function generateAccessTokenForSharedUser(userWithSession: UserJwtPayloadWithSession, jwtSecret: string): Token {
+export function generateAccessTokenForSharedUser(userWithSession: UserJwtPayloadWithSession): Token {
   const userPayload: UserJwtPayloadWithSession = {
     id: userWithSession.id,
     name: userWithSession.name,
@@ -51,7 +51,7 @@ export function generateAccessTokenForSharedUser(userWithSession: UserJwtPayload
     cachePath: userWithSession.cachePath,
     session: userWithSession.session
   };
-  return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, jwtSecret);
+  return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, JWT_SECRET);
 }
 
 export function generateRefreshToken(user: User): Token {
