@@ -7,7 +7,7 @@ import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
 import { PublicUserResponseDTO } from "../models/user.model.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
-import { generateAccessToken, generateAccessTokenForSharedUser } from "../utils/jwt.util.js";
+import { generateAccessToken } from "../utils/jwt.util.js";
 import { Logger } from "log4js";
 
 export class SharedUserService {
@@ -290,12 +290,11 @@ export class SharedUserService {
     }
     const {accessToken, session} = 
       await this.updateTokenValidity(user, sharedUser);
-    
+    this.logger.debug(`Access token: ${accessToken}`);
     sharedUserContextRequest.requestHeaders = {
       ...sharedUserContextRequest.requestHeaders,
       "Authorization": `Bearer ${accessToken}`,
     }
-    sharedUserContextRequest
     // const encryptedBody = this.createSessionEncryptedBody(session, sharedUserContextRequest.requestBody);
     // sharedUserContextRequest.requestBody = encryptedBody;
     // Send the request to the shared user
