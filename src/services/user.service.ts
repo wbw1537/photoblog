@@ -125,8 +125,8 @@ export class UserService {
     };
   }
 
-  async getUsers(skip: number, take: number): Promise<PublicUserInfoDTO[]> {
-    const users = await this.userRepository.findAll(skip, take);
+  async getUsers(): Promise<PublicUserInfoDTO[]> {
+    const users = await this.userRepository.findAll();
     return users.map(user => ({
       id: user.id,
       name: user.name,

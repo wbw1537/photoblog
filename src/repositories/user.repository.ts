@@ -27,10 +27,8 @@ export class UserRepository {
     });
   }
 
-  async findAll(skip: number, take: number) {
+  async findAll() {
     return await this.prismaClient.user.findMany({
-      skip,
-      take,
       select : {
         id: true,
         name: true,

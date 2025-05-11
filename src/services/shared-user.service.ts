@@ -24,7 +24,7 @@ export class SharedUserService {
   }
 
   async fetchRemoteUsers(remoteAddress: string): Promise<PublicUserResponseDTO> {
-    // Fetch all remote users from the database
+    // Fetch all remote users
     const remoteUsers = await this.sharedUserConnector.getRemoteUsers(remoteAddress);
     return remoteUsers;
   }

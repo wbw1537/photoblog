@@ -9,7 +9,7 @@ export class SharedUserConnector {
   constructor() {}
 
   async getRemoteUsers(remoteAddress: string) {
-    const remoteUsers = await fetch(`${remoteAddress}/api/${API_URLS.USER.PUBLIC_USERS}`, {
+    const remoteUsers = await fetch(`http://${remoteAddress}/api${API_URLS.USER.PUBLIC_USERS}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -23,7 +23,7 @@ export class SharedUserConnector {
   }
 
   async sendRemoteSharingRequest(remoteAddress: string, requestBody: SharedUserInitRemoteRequestDTO) {
-    const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.PUBLIC_INIT}`, {
+    const response = await fetch(`${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_INIT}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -38,7 +38,7 @@ export class SharedUserConnector {
   }
 
   async exchangeEncryptedPublicKey(remoteAddress: string, requestBody: SharedUserExchangeKeyRequest) {
-    const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.PUBLIC_EXCHANGE}`, {
+    const response = await fetch(`${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_EXCHANGE}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -56,7 +56,7 @@ export class SharedUserConnector {
   }
 
   async validateRemotePublicKey(remoteAddress: string, requestBody: SharedUserValidateRequest) {
-    const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.PUBLIC_VALIDATE}`, {
+    const response = await fetch(`${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_VALIDATE}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -71,7 +71,7 @@ export class SharedUserConnector {
   }
 
   async getSession(remoteAddress: string, requestBody: SessionRequestDTO) {
-    const response = await fetch(`${remoteAddress}/api/${API_URLS.SHARED_USER.PUBLIC_SESSION}`, {
+    const response = await fetch(`${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_SESSION}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
