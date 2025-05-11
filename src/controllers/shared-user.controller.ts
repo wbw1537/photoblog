@@ -49,8 +49,8 @@ export class SharedUserController {
     try {
       const userId = req.body.user.id;
       const sharedUserInitRequest: SharedUserInitRequestDTO = req.body;
-      await this.sharedUserService.initSharingRequest(userId, sharedUserInitRequest);
-      res.status(201);
+      const response = await this.sharedUserService.initSharingRequest(userId, sharedUserInitRequest);
+      res.status(201).json(response);
     } catch (error: unknown) {
       next(error);
     }

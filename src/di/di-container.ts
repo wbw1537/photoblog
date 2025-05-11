@@ -76,7 +76,7 @@ const blogService = new BlogService(blogRepository, tagRepository);
 const tagService = new TagService(tagRepository, photoRepository, blogRepository);
 const photoService = new PhotoService(photoRepository, tagRepository);
 const photoFileService = new PhotoFileService(photoFileRepository);
-const sharedUserService = new SharedUserService(sharedUserRepository, userRepository, sharedUserConnector);
+const sharedUserService = new SharedUserService(logger, sharedUserRepository, userRepository, sharedUserConnector);
 
 // Controller layer instances
 const userController = new UserController(userService);

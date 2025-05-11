@@ -1,18 +1,20 @@
 import crypto, { randomBytes } from "crypto";
 import { Prisma, SharedUser, SharedUserDirection, SharedUserStatus, User } from "@prisma/client";
 
-import { SessionRequestDTO, SessionResponseDTO, SharedUserContextRequestDTO, SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest, SharedUserValidateRequest } from "../models/shared-user.model.js";
+import { SessionRequestDTO, SessionResponseDTO, SharedUserContextRequestDTO, SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInfo, SharedUserInitRemoteRequestDTO , SharedUserInitRequestDTO, SharedUserInitRespondDTO, SharedUserRequest, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { SharedUserRepository } from "../repositories/shared-user.repository.js";
 import { UserRepository } from "../repositories/user.repository.js";
 import { SharedUserConnector } from "../connectors/shared-user.connector.js";
 import { PublicUserResponseDTO } from "../models/user.model.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
 import { generateAccessTokenForSharedUser } from "../utils/jwt.util.js";
+import { Logger } from "log4js";
 
 export class SharedUserService {
   readonly DOCUMENT = '-Aureliano -dijo tristemente en el manipulador-, está lloviendo en Macondo.';
 
   constructor(
+    private logger: Logger,
     private sharedUserRepository: SharedUserRepository,
     private userRepository: UserRepository,
     private sharedUserConnector: SharedUserConnector
@@ -29,32 +31,42 @@ export class SharedUserService {
     return remoteUsers;
   }
 
-  async initSharingRequest(userId: string, sharedUserInitRequest: SharedUserInitRequestDTO): Promise<void> {
+  async initSharingRequest(userId: string, sharedUserInitRequest: SharedUserInitRequestDTO) {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new PhotoBlogError("User not found", 404);
     }
     const { tempPublicKey, tempPrivateKey } = this.generateTempKeys();
+    this.logger.debug(`tempPublicKey: ${tempPublicKey}`);
+    this.logger.debug(`tempPrivateKey: ${tempPrivateKey}`);
     const requestBody = this.sharedUserConnector.buildInitRemoteRequestBody(user, sharedUserInitRequest, tempPublicKey);
-    try {
-      const response = await this.sharedUserConnector.sendRemoteSharingRequest(
-        sharedUserInitRequest.requestToUserInfo.address,
-        requestBody
-      ) as SharedUserInitRespondDTO;
-      if (!response || !response.requestFromUserInfo || !response.requestToUserInfo) {
-        throw new PhotoBlogError("Invalid response from remote user", 500);
-      }
-      const sharedUserTempSymmetricKey = this.generateSharedSymmetricKey(
-        tempPrivateKey,
-        response.tempPublicKey
-      );
-      await this.sharedUserRepository.createOutgoingSharedUser(
-        response,
-        sharedUserTempSymmetricKey
-      );
-    } catch (error) {
-      throw new PhotoBlogError(`Failed to send remote sharing request: ${error}`, 500);
+    const remoteResponse = await this.sharedUserConnector.sendRemoteSharingRequest(
+      sharedUserInitRequest.requestToUserInfo.address,
+      requestBody
+    ) as SharedUserInitRespondDTO;
+    if (!remoteResponse || !remoteResponse.requestFromUserInfo || !remoteResponse.requestToUserInfo) {
+      throw new PhotoBlogError("Invalid response from remote user", 500);
     }
+    const sharedUserTempSymmetricKey = this.generateSharedSymmetricKey(
+      tempPrivateKey,
+      remoteResponse.tempPublicKey
+    );
+    this.logger.debug(`sharedUserTempSymmetricKey: ${sharedUserTempSymmetricKey}`);
+    // Create a response object
+    const sharedUser = await this.sharedUserRepository.createOutgoingSharedUser(
+      remoteResponse,
+      sharedUserTempSymmetricKey
+    );
+    const response: SharedUserInfo = {
+      id: sharedUser.id,
+      name: sharedUser.sharedUserName,
+      email: sharedUser.sharedUserEmail,
+      remoteAddress: sharedUser.sharedUserAddress,
+      status: sharedUser.status,
+      direction: sharedUser.direction,
+      comment: sharedUser.comment,
+    }
+    return response;
   }
 
   async initRemoteSharingRequest(sharedUserRequest: SharedUserInitRemoteRequestDTO): Promise<SharedUserInitRespondDTO> {
@@ -65,11 +77,14 @@ export class SharedUserService {
     }
     // Generate a temporary public key and private key
     const { tempPublicKey, tempPrivateKey } = this.generateTempKeys();
+    this.logger.debug(`tempPublicKey: ${tempPublicKey}`);
+    this.logger.debug(`tempPrivateKey: ${tempPrivateKey}`);
     // Use DHKE to generate a shared symmetric key
     const sharedUserTempSymmetricKey = this.generateSharedSymmetricKey(
       tempPrivateKey,
       sharedUserRequest.tempPublicKey
     );
+    this.logger.debug(`sharedUserTempSymmetricKey: ${sharedUserTempSymmetricKey}`);
     // Create a new shared user in the database
     await this.sharedUserRepository.createIncomingSharedUser(
       sharedUserRequest,
