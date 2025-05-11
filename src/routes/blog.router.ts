@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { authenticate, encrypt } from '../di/di-container.js';
+import { authenticate } from '../di/di-container.js';
 import { blogController } from '../di/di-container.js';
 import { API_URLS } from './api.constants.js';
 
@@ -16,10 +16,10 @@ blogRouter.post(API_URLS.BLOG.BASE, authenticate, (req, res, next) =>
   blogController.postBlog(req, res, next));
 
 // Private routes
-blogRouter.get(API_URLS.BLOG.PRIVATE_BASE, authenticate, encrypt, (req, res, next) => 
+blogRouter.get(API_URLS.BLOG.PRIVATE_BASE, authenticate, (req, res, next) => 
   blogController.getBlogs(req, res, next));
 
-blogRouter.get(API_URLS.BLOG.PRIVATE_BY_ID, authenticate, encrypt, (req, res, next) => 
+blogRouter.get(API_URLS.BLOG.PRIVATE_BY_ID, authenticate, (req, res, next) => 
   blogController.getBlogById(req, res, next));
 
 export default blogRouter;

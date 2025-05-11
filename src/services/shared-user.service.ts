@@ -303,8 +303,8 @@ export class SharedUserService {
       sharedUserContextRequest
     );
     // Decrypt the response body
-    const decryptedResponse = this.decryptSession(session, encryptedBase64);
-    return decryptedResponse;
+    // const decryptedResponse = this.decryptSession(session, encryptedBase64);
+    return encryptedBase64;
   }
 
   private async checkSharedUserPendingStatus(userId: string, sharedUserId: string) {
