@@ -44,8 +44,8 @@ export const API_URLS = {
     BASE: '/v1/shared-user',
     FETCH_REMOTE: '/v1/shared-user/fetch-remote',
     INIT: '/v1/shared-user/init',
-    ACTIVE: '/v1/shared-user/active:sharedUserId',
-    BLOCK: '/v1/shared-user/block:sharedUserId',
+    ACTIVE: '/v1/shared-user/active/:sharedUserId',
+    BLOCK: '/v1/shared-user/block/:sharedUserId',
     REQUEST: '/v1/shared-user/request',
     // Public endpoints
     PUBLIC_INIT: '/public/v1/shared-user/init',
