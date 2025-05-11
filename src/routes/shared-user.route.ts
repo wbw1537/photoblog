@@ -34,7 +34,7 @@ sharedUserRouter.post(API_URLS.SHARED_USER.PUBLIC_EXCHANGE, (req, res, next) =>
 sharedUserRouter.post(API_URLS.SHARED_USER.PUBLIC_VALIDATE, (req, res, next) => 
   sharedUserController.validateRemotePublicKey(req, res, next));
 
-sharedUserRouter.get(API_URLS.SHARED_USER.PUBLIC_SESSION, (req, res, next) => 
+sharedUserRouter.post(API_URLS.SHARED_USER.PUBLIC_SESSION, (req, res, next) => 
   sharedUserController.getSession(req, res, next));
 
 export default sharedUserRouter;

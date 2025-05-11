@@ -273,7 +273,7 @@ export class SharedUserService {
 
   public async requestSharedUser(userId: string, sharedUserContextRequest: SharedUserContextRequestDTO) {
     // Check if the shared user exists
-    const sharedUser = await this.sharedUserRepository.findBySharedUserId(userId, sharedUserContextRequest.requestToUserInfo.id);
+    const sharedUser = await this.sharedUserRepository.findById(sharedUserContextRequest.requestToUserInfo.id);
     if (!sharedUser) {
       throw new PhotoBlogError("Shared user not found", 404);
     }
