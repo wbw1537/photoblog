@@ -4,18 +4,23 @@ import { PhotoBlogError } from "../errors/photoblog.error.js";
 import { SessionRequestDTO, SessionResponseDTO, SharedUserContextRequestDTO, SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { PublicUserResponseDTO } from "../models/user.model.js";
 import { API_URLS } from "../routes/api.constants.js"
+import { Logger } from "log4js";
 
 export class SharedUserConnector {
-  constructor() {}
+  constructor(
+    private logger: Logger,
+  ) {}
 
   async getRemoteUsers(remoteAddress: string) {
-    const remoteUsers = await fetch(`http://${remoteAddress}/api${API_URLS.USER.PUBLIC_USERS}`, {
+    const requestUrl = `http://${remoteAddress}/api${API_URLS.USER.PUBLIC_USERS}`;
+    const remoteUsers = await fetch(requestUrl, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
     });
     if (!remoteUsers.ok) {
+      this.logger.error(`Failed to fetch remote users: ${remoteUsers.statusText}, ${requestUrl}`);
       throw new PhotoBlogError(`Failed to fetch remote users: ${remoteUsers.statusText}`, 500);
     }
     const remoteUsersData = await remoteUsers.json() as PublicUserResponseDTO;
@@ -23,7 +28,8 @@ export class SharedUserConnector {
   }
 
   async sendRemoteSharingRequest(remoteAddress: string, requestBody: SharedUserInitRemoteRequestDTO) {
-    const response = await fetch(`${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_INIT}`, {
+    const requestUrl = `http://${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_INIT}`;
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -31,6 +37,7 @@ export class SharedUserConnector {
       body: JSON.stringify(requestBody),
     });
     if (!response.ok) {
+      this.logger.error(`Failed to send remote sharing request: ${response.statusText}, ${requestUrl}`);
       throw new PhotoBlogError(`Failed to send remote sharing request: ${response.statusText}`, 500);
     }
     const responseData = await response.json();
@@ -38,7 +45,8 @@ export class SharedUserConnector {
   }
 
   async exchangeEncryptedPublicKey(remoteAddress: string, requestBody: SharedUserExchangeKeyRequest) {
-    const response = await fetch(`${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_EXCHANGE}`, {
+    const requestUrl = `http://${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_EXCHANGE}`;
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -46,17 +54,20 @@ export class SharedUserConnector {
       body: JSON.stringify(requestBody),
     });
     if (!response.ok) {
+      this.logger.error(`Failed to exchange encrypted public key: ${response.statusText}, ${requestUrl}`);
       throw new PhotoBlogError(`Failed to exchange encrypted public key: ${response.statusText}`, 500);
     }
     const responseData = await response.json();
     if (!responseData || !responseData.encryptedPublicKey) {
+      this.logger.error(`Invalid response from remote user: ${requestUrl}`);
       throw new PhotoBlogError("Invalid response from remote user", 500);
     }
     return responseData as SharedUserExchangeKeyRespond;
   }
 
   async validateRemotePublicKey(remoteAddress: string, requestBody: SharedUserValidateRequest) {
-    const response = await fetch(`${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_VALIDATE}`, {
+    const requestUrl = `http://${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_VALIDATE}`;
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -64,6 +75,7 @@ export class SharedUserConnector {
       body: JSON.stringify(requestBody),
     });
     if (!response.ok) {
+      this.logger.error(`Failed to validate remote public key: ${response.statusText}, ${requestUrl}`);
       throw new PhotoBlogError(`Failed to validate remote public key: ${response.statusText}`, 500);
     } else {
       return true;
@@ -71,7 +83,8 @@ export class SharedUserConnector {
   }
 
   async getSession(remoteAddress: string, requestBody: SessionRequestDTO) {
-    const response = await fetch(`${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_SESSION}`, {
+    const requestUrl = `http://${remoteAddress}/api${API_URLS.SHARED_USER.PUBLIC_SESSION}`;
+    const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -79,6 +92,7 @@ export class SharedUserConnector {
       body: JSON.stringify(requestBody),
     });
     if (!response.ok) {
+      this.logger.error(`Failed to get session: ${response.statusText}, ${requestUrl}`);
       throw new PhotoBlogError(`Failed to get session: ${response.statusText}`, 500);
     }
     const responseData = await response.json();
@@ -86,12 +100,14 @@ export class SharedUserConnector {
   }
 
   async requestSharedUser(remoteAddress: string, sharedUserContextRequest: SharedUserContextRequestDTO) {
-    const response = await fetch(`${remoteAddress}/api/private/${sharedUserContextRequest.requestUrl}`, {
+    const requestUrl = `http://${remoteAddress}/api/private/${sharedUserContextRequest.requestUrl}`;
+    const response = await fetch(requestUrl, {
       method: sharedUserContextRequest.requestMethod,
       headers: sharedUserContextRequest.requestHeaders,
       body: JSON.stringify(sharedUserContextRequest.requestBody),
     });
     if (!response.ok) {
+      this.logger.error(`Failed to request shared user: ${response.statusText}, ${requestUrl}`);
       throw new PhotoBlogError(`Failed to request shared user: ${response.statusText}`, 500);
     }
     const encryptedBase64 = await response.text();

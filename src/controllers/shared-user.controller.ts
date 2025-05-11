@@ -240,15 +240,13 @@ export class SharedUserController {
     }
   }
 
-  private async validateTimestamp(timestamp: number) {
+  private validateTimestamp(timestamp: number) {
     const currentTime = Date.now();
-    const timeDifference = currentTime - timestamp;
+    const timeDifference = Math.abs(currentTime - timestamp);
     const fiveMinutesInMillis = 5 * 60 * 1000;
+
     if (timeDifference > fiveMinutesInMillis) {
-      throw new PhotoBlogError("Timestamp is too old", 500);
-    }
-    if (timeDifference < 0) {
-      throw new PhotoBlogError("Timestamp is in the future", 500);
+      throw new PhotoBlogError("Timestamp is invalid: either too old or in the future", 500);
     }
   }
 }

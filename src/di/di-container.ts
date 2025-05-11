@@ -67,7 +67,7 @@ const convertPhotoJob = new ConvertPhotoJob(logger);
 const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFileRepository, scanStatusService, convertPhotoJob, logger);
 
 // Connectors layer instances
-const sharedUserConnector = new SharedUserConnector();
+const sharedUserConnector = new SharedUserConnector(logger);
 
 // Service layer instances
 const photoScanService = new PhotoScanService(scanStatusService, photoScanJob);
