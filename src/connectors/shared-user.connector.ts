@@ -131,13 +131,14 @@ export class SharedUserConnector {
     };
   }
 
+  // The Key Exchange Request always comes from the requestToUser
   buildExchangeKeyRequestBody(user: User, sharedUser: SharedUser, encryptedUserPublicKey: string): SharedUserExchangeKeyRequest {
     return {
       requestToUserInfo: {
         id: user.id,
       },
       requestFromUserInfo: {
-        id: sharedUser.id,
+        id: sharedUser.sharedUserId,
       },
       encryptedPublicKey: encryptedUserPublicKey,
       timestamp: Date.now(),
@@ -147,7 +148,7 @@ export class SharedUserConnector {
   buildValidateKeyRequestBody(user: User, sharedUser: SharedUser, signature: string): SharedUserValidateRequest {
     return {
       requestFromUserInfo: {
-        id: sharedUser.id,
+        id: sharedUser.sharedUserId,
       },
       requestToUserInfo: {
         id: user.id,

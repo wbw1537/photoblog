@@ -108,6 +108,7 @@ export class SharedUserService {
   }
 
   async setSharedUserActive(userId: string, id: string) {
+    this.logger.info(`Starting to process key exchange and validation for shared user ${id}`);
     // Get user
     const user = await this.userRepository.findById(userId);
     if (!user) {
@@ -406,6 +407,8 @@ export class SharedUserService {
       sharedUser.id,
       decryptedResponsePublicKey
     );
+    this.logger.info(`Key exchange completed successfully for shared user ${sharedUser.id}`);
+    this.logger.debug(`Decrypted public key: ${decryptedResponsePublicKey}`);
   }
 
   private async validateKeys(user: User, sharedUser: SharedUser) {
@@ -417,6 +420,7 @@ export class SharedUserService {
       sharedUser.sharedUserAddress,
       requestBody
     );
+    this.logger.info(`Key validation completed successfully for shared user ${sharedUser.id}`);
   }
 
   private createSignature(userPrivateKey: string) {
@@ -444,7 +448,7 @@ export class SharedUserService {
     const keyBuffer = Buffer.from(sharedUserTempSymmetricKey, 'base64');
     const iv = crypto.randomBytes(16);
     const cipher = crypto.createDecipheriv("aes-256-cbc", keyBuffer, iv);
-    
+
     // Encrypt the userPublicKey
     let encrypted = cipher.update(encryptedPublicKey, "utf-8", "hex");
     encrypted += cipher.final("hex");
@@ -487,7 +491,7 @@ export class SharedUserService {
   private async updateTokenValidity(user: User, sharedUser: SharedUser) {
     if (!sharedUser.accessToken || this.isTokenExpired(sharedUser.accessTokenExpireTime) || !sharedUser.session) {
       const signature = this.createSignature(user.privateKey);
-      const sessionRequest: SessionRequestDTO = this.sharedUserConnector.buildSessionRequestBody(user, sharedUser.id, signature);
+      const sessionRequest: SessionRequestDTO = this.sharedUserConnector.buildSessionRequestBody(user, sharedUser.sharedUserId, signature);
       const sessionRespond = await this.sharedUserConnector.getSession(sharedUser.sharedUserAddress, sessionRequest);
       const decryptedSession = this.decryptSession(user.privateKey, sessionRespond.session);
       sessionRespond.session = decryptedSession;
