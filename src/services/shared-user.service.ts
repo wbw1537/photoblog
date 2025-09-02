@@ -37,8 +37,6 @@ export class SharedUserService {
       throw new PhotoBlogError("User not found", 404);
     }
     const { tempPublicKey, tempPrivateKey } = this.generateTempKeys();
-    this.logger.debug(`tempPublicKey: ${tempPublicKey}`);
-    this.logger.debug(`tempPrivateKey: ${tempPrivateKey}`);
     const requestBody = this.sharedUserConnector.buildInitRemoteRequestBody(user, sharedUserInitRequest, tempPublicKey);
     const remoteResponse = await this.sharedUserConnector.sendRemoteSharingRequest(
       sharedUserInitRequest.requestToUserInfo.address,
@@ -77,8 +75,6 @@ export class SharedUserService {
     }
     // Generate a temporary public key and private key
     const { tempPublicKey, tempPrivateKey } = this.generateTempKeys();
-    this.logger.debug(`tempPublicKey: ${tempPublicKey}`);
-    this.logger.debug(`tempPrivateKey: ${tempPrivateKey}`);
     // Use DHKE to generate a shared symmetric key
     const sharedUserTempSymmetricKey = this.generateSharedSymmetricKey(
       tempPrivateKey,
@@ -288,7 +284,7 @@ export class SharedUserService {
     if (sharedUser.status !== SharedUserStatus.Active) {
       throw new PhotoBlogError("Shared user is not active", 403);
     }
-    const {accessToken, session} = 
+    const {accessToken, } = 
       await this.updateTokenValidity(user, sharedUser);
     this.logger.debug(`Access token: ${accessToken}`);
     sharedUserContextRequest.requestHeaders = {
