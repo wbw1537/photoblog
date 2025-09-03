@@ -140,6 +140,6 @@ The application would determine if HTTPS is enabled between instances.
 
 ## Further implementation tasks
 
-- Add a is local field in User table, enhance shared-user service to add the user into user table after trust establishment.
+- Refactor shared-user table to remove redundant fields, add a independent user relationship table to manage user-to-user relationships.
 - Enhance all assets API to involve shared-user checking logic.
 - Implement private API endpoints for assets.
