@@ -64,6 +64,7 @@ export class BlogRepository {
       userId: true,
       title: true,
       blogType: true,
+      createdAt: true,
       tags: {
         select: {
           tag: {

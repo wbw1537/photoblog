@@ -9,6 +9,7 @@ import blogRouter from './routes/blog.router.js';
 import tagRouter from './routes/tag.router.js';
 import photoRouter from './routes/photo.router.js';
 import photoFileRouter from './routes/photo-file.router.js';
+import sharedUserRouter from './routes/shared-user.route.js';
 
 const app: Application = express();
 
@@ -27,6 +28,7 @@ app.use('/', blogRouter);
 app.use('/', tagRouter);
 app.use('/', photoRouter);
 app.use('/', photoFileRouter);
+app.use('/', sharedUserRouter);
 
 // Handle unknown routes (404 handler)
 app.use((req: Request, res: Response) => {

@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 
-import { CreateUserDTO, TokenResponseDTO } from "../models/user.model.js";
+import { CreateUserDTO, ModifyUserInfoRequestDTO, TokenResponseDTO } from "../models/user.model.js";
 import { UserService } from "../services/user.service.js";
 
 export class UserController {
@@ -55,6 +55,17 @@ export class UserController {
     }
   }
 
+  async modifyUserInfo(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.body.user.id;
+      const modifyRequest: ModifyUserInfoRequestDTO = req.body;
+      const user = await this.userService.modifyUserInfo(userId, modifyRequest);
+      res.status(200).json(user);
+    } catch (err: unknown) {
+      next(err);
+    }
+  }
+
   async refreshToken(req: Request, res: Response, next: NextFunction) {
     try {
       const { refreshToken } = req.body;
@@ -64,6 +75,15 @@ export class UserController {
       }
       const tokens: TokenResponseDTO = await this.userService.refreshToken(refreshToken);
       res.status(200).json(tokens);
+    } catch (err: unknown) {
+      next(err);
+    }
+  }
+
+  async getUsers(req: Request, res: Response, next: NextFunction) {
+    try {
+      const users = await this.userService.getUsers();
+      res.status(200).json({ users });
     } catch (err: unknown) {
       next(err);
     }

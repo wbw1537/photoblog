@@ -1,12 +1,25 @@
 import express from 'express';
-import { authenticate } from '../middleware/auth.middleware.js';
+
+import { authenticate } from '../di/di-container.js';
 import { blogController } from '../di/di-container.js';
+import { API_URLS } from './api.constants.js';
 
 const blogRouter = express.Router();
 
+blogRouter.get(API_URLS.BLOG.BASE, authenticate, (req, res, next) => 
+  blogController.getBlogs(req, res, next));
 
-blogRouter.get('/v1/blogs', authenticate, (req, res, next) => blogController.getBlogs(req, res, next));
-blogRouter.get('/v1/blogs/:blogId', authenticate, (req, res, next) => blogController.getBlogById(req, res, next));
-blogRouter.post('/v1/blogs', authenticate, (req, res, next) => blogController.postBlog(req, res, next));
+blogRouter.get(API_URLS.BLOG.BY_ID, authenticate, (req, res, next) => 
+  blogController.getBlogById(req, res, next));
+
+blogRouter.post(API_URLS.BLOG.BASE, authenticate, (req, res, next) => 
+  blogController.postBlog(req, res, next));
+
+// Private routes
+blogRouter.get(API_URLS.BLOG.PRIVATE_BASE, authenticate, (req, res, next) => 
+  blogController.getBlogs(req, res, next));
+
+blogRouter.get(API_URLS.BLOG.PRIVATE_BY_ID, authenticate, (req, res, next) => 
+  blogController.getBlogById(req, res, next));
 
 export default blogRouter;
