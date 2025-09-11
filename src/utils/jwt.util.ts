@@ -1,11 +1,14 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import log4js from "log4js";
 
-import { User } from '@prisma/client';
+import { User, Prisma } from '@prisma/client';
 import { Token, UserInfoDTO } from '../models/user.model.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 import { UserJwtPayloadWithSession } from '../models/shared-user.model.js';
 
+type UserWithLocalUser = Prisma.UserGetPayload<{
+  include: { localUser: true }
+}>;
 
 const logger = log4js.getLogger();
 
@@ -27,15 +30,15 @@ function generateUtilizedToken(sign: object, expiresIn: string, jwtSecret: strin
   };
 }
 
-export function generateAccessToken(user: User): Token {
+export function generateAccessToken(user: UserWithLocalUser): Token {
   const userPayload: UserInfoDTO = {
     id: user.id,
     name: user.name,
     email: user.email,
     type: user.type,
-    address: user.address,
-    basePath: user.basePath,
-    cachePath: user.cachePath
+    instanceUrl: user.instanceUrl,
+    basePath: user.localUser?.basePath || '',
+    cachePath: user.localUser?.cachePath || ''
   };
   return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, JWT_SECRET);
 }
@@ -46,7 +49,7 @@ export function generateAccessTokenForSharedUser(userWithSession: UserJwtPayload
     name: userWithSession.name,
     email: userWithSession.email,
     type: userWithSession.type,
-    address: userWithSession.address,
+    instanceUrl: userWithSession.instanceUrl,
     basePath: userWithSession.basePath,
     cachePath: userWithSession.cachePath,
     session: userWithSession.session
@@ -54,15 +57,15 @@ export function generateAccessTokenForSharedUser(userWithSession: UserJwtPayload
   return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, JWT_SECRET);
 }
 
-export function generateRefreshToken(user: User): Token {
+export function generateRefreshToken(user: UserWithLocalUser): Token {
   const userPayload: UserInfoDTO = {
     id: user.id,
     name: user.name,
     email: user.email,
     type: user.type,
-    address: user.address,
-    basePath: user.basePath,
-    cachePath: user.cachePath
+    instanceUrl: user.instanceUrl,
+    basePath: user.localUser?.basePath || '',
+    cachePath: user.localUser?.cachePath || ''
   };
   return generateUtilizedToken(userPayload, REFRESH_TOKEN_EXPIRATION, JWT_SECRET);
 }

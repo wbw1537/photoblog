@@ -8,13 +8,16 @@ export class UserRepository {
   ) {
   }
 
-  async findById(id: string) {
+  async findLocalUserById(id: string) {
     return await this.prismaClient.user.findUnique({
-      where: { id },
+      where: { id, type: UserType.Normal },
+      include: {
+        localUser: true
+      }
     });
   }
 
-async findLocalUserPhotosForScan(userId: string) {
+  async findLocalUserPhotosForScan(userId: string) {
     return this.prismaClient.user.findUnique({
       where: { id: userId, type: UserType.Normal },
       select: {
@@ -45,41 +48,58 @@ async findLocalUserPhotosForScan(userId: string) {
 
   async findAll() {
     return await this.prismaClient.user.findMany({
-      select : {
+      select: {
         id: true,
         name: true,
         email: true,
-        address: true,
+        instanceUrl: true,
       }
     });
   }
 
-  async findByEmail(email: string) {
+  async findLocalUserByEmail(email: string) {
     return await this.prismaClient.user.findUnique({
-      where: { email },
+      where: { email, type: UserType.Normal },
+      include: {
+        localUser: true
+      }
     });
   }
 
   async getBasePathById(id: string) {
     return await this.prismaClient.user.findUnique({
       where: { id },
-      select: { basePath: true },
+      select: { 
+        localUser: {
+          select: {
+            basePath: true
+          }
+        },
+      }
     });
   }
 
-  async create(user: CreateUserDTO, publicKey: string, privateKey: string) {
+  async createLocalUser(user: CreateUserDTO, publicKey: string, privateKey: string) {
     // The first user is the admin
     const isFirstUser = await this.prismaClient.user.count() === 0;
     const userType = isFirstUser ? UserType.Admin : UserType.Pending;
+
     return await this.prismaClient.user.create({
       data: {
         name: user.name,
-        password: user.password,
         email: user.email,
         type: userType,
-        publicKey,
-        privateKey,
+        localUser: {
+          create: {
+            password: user.password,
+            publicKey: publicKey,
+            privateKey: privateKey,
+          }
+        }
       },
+      include: {
+        localUser: true
+      }
     });
   }
 
@@ -89,10 +109,17 @@ async findLocalUserPhotosForScan(userId: string) {
       data: {
         name: user.name,
         email: user.email,
-        password: user.password,
-        address: user.address,
-        basePath: user.basePath,
-        cachePath: user.cachePath,
+        instanceUrl: user.instanceUrl,
+        localUser: {
+          update: {
+            password: user.password,
+            basePath: user.basePath,
+            cachePath: user.cachePath,
+          }
+        }
+      },
+      include: {
+        localUser: true
       }
     });
   }

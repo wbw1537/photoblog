@@ -5,7 +5,7 @@ export interface CreateUserDTO {
   name: string;
   password: string;
   email: string;
-  address?: string;
+  instanceUrl?: string;
 }
 
 export interface UserInfoDTO {
@@ -13,7 +13,7 @@ export interface UserInfoDTO {
   name: string;
   email: string;
   type: UserType;
-  address: string;
+  instanceUrl: string;
   basePath: string;
   cachePath: string;
 }
@@ -22,7 +22,7 @@ export interface ModifyUserInfoRequestDTO {
   name?: string;
   email?: string;
   password?: string;
-  address?: string;
+  instanceUrl?: string;
   basePath?: string;
   cachePath?: string;
 }
@@ -35,7 +35,7 @@ export interface PublicUserInfoDTO {
   id: string;
   name: string;
   email: string;
-  address: string;
+  instanceUrl: string;
 }
 
 export interface UserLoginResponseDTO extends UserInfoDTO {
