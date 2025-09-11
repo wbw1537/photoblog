@@ -14,16 +14,32 @@ export class UserRepository {
     });
   }
 
-  async findAllById(id: string) {
-    return await this.prismaClient.user.findUnique({
-      where: { id },
-      include: {
+async findLocalUserPhotosForScan(userId: string) {
+    return this.prismaClient.user.findUnique({
+      where: { id: userId, type: UserType.Normal },
+      select: {
+        id: true,
+        localUser: {
+          select: {
+            basePath: true,
+            cachePath: true,
+          }
+        },
         photos: {
-          include: {
-            files: true,
+          select: {
+            id: true,
+            files: {
+              select: {
+                id: true,
+                filePath: true,
+                fileHash: true,
+                photoId: true,
+                status: true
+              }
+            }
           }
         }
-      },
+      }
     });
   }
 

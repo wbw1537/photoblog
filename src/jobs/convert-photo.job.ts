@@ -1,24 +1,24 @@
 import { Logger } from 'log4js';
 import { exec } from 'child_process';
-import { User } from '@prisma/client';
 import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import { ValidatedUserForScan } from '../models/user.model';
 
 export class ConvertPhotoJob {
   constructor(
     private logger: Logger,
   ) { }
 
-  async convertToPreview(user: User, filePath: string) {
-    const fileFullPath = path.join(user.basePath, filePath);
+  async convertToPreview(user: ValidatedUserForScan, filePath: string) {
+    const fileFullPath = path.join(user.localUser.basePath, filePath);
     // Create a hash from the filepath to avoid special chars and long paths
     const fileHash = crypto.createHash('md5').update(filePath).digest('hex');
     // Organize by hash prefix (first 2 chars) for better directory distribution
     const hashPrefix = fileHash.substring(0, 2);
     
     // Store previews in a more organized way
-    const previewDir = path.join(user.cachePath, 'previews', hashPrefix);
+    const previewDir = path.join(user.localUser.cachePath, 'previews', hashPrefix);
     const previewPhotoFullPath = path.join(previewDir, `${fileHash}.webp`);
     
     try {
@@ -45,10 +45,10 @@ export class ConvertPhotoJob {
     }
   }
 
-  async deletePreview(user: User, filePath: string) {
+  async deletePreview(user: ValidatedUserForScan, filePath: string) {
     const fileHash = crypto.createHash('md5').update(filePath).digest('hex');
     const hashPrefix = fileHash.substring(0, 2);
-    const previewPhotoFullPath = path.join(user.cachePath, 'previews', hashPrefix, `${fileHash}.webp`);
+    const previewPhotoFullPath = path.join(user.localUser.cachePath, 'previews', hashPrefix, `${fileHash}.webp`);
     
     try {
       await fs.unlink(previewPhotoFullPath);

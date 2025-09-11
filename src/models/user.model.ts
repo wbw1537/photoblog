@@ -1,4 +1,5 @@
 import { UserType } from "@prisma/client";
+import { PhotoFileForScan } from "./photo-file.model";
 
 export interface CreateUserDTO {
   name: string;
@@ -54,3 +55,15 @@ export interface TokenResponseDTO {
 }
 
 export const placeholder = "**PLACEHOLDER**" as const;
+
+export type ValidatedUserForScan = {
+  id: string;
+  localUser: {
+    basePath: string;
+    cachePath: string;
+  };
+  photos: Array<{
+    id: string;
+    files: PhotoFileForScan[];
+  }>;
+};
