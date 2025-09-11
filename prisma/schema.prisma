@@ -33,29 +33,42 @@ enum UserType {
   Admin
   Normal
   Pending
+  Remote
 }
 
-// User model
+// Core user model (universal fields)
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  password  String
-  email     String   @unique
-  address   String   @default("**PLACEHOLDER**")
-  type      UserType @default(Pending)
-  basePath  String   @default("**PLACEHOLDER**")
-  cachePath String   @default("**PLACEHOLDER**")
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  type        UserType @default(Pending)
+  instanceUrl String   @default("**PLACEHOLDER**")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  // Encryption keys
+  // Relations
+  photos        Photo[]
+  blogs         Blog[]
+  localUser     LocalUser?
+  remoteUser    RemoteUser?
+  fromRelations UserRelationship[] @relation("FromUser")
+  toRelations   UserRelationship[] @relation("ToUser")
+  // followers     Follow[]           @relation("Following")
+  // following     Follow[]           @relation("Follower")
+}
+
+// Local user specific data
+model LocalUser {
+  id         String @id @default(cuid())
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String @unique
+  password   String
+  basePath   String @default("**PLACEHOLDER**")
+  cachePath  String @default("**PLACEHOLDER**")
   publicKey  String @db.VarChar(2048)
   privateKey String @db.VarChar(2048)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  photos      Photo[]
-  blogs       Blog[]
-  sharedUsers SharedUser[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 // Photo model
@@ -167,38 +180,66 @@ model BlogTag {
   @@id([blogId, tagId])
 }
 
-enum SharedUserStatus {
+// Remote user federation data
+model RemoteUser {
+  id                   String    @id @default(cuid())
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId               String    @unique
+  instanceUrl          String
+  publicKey            String    @db.VarChar(2048)
+  tempSymmetricKey     String?   @db.VarChar(2048)
+  accessToken          String?   @db.VarChar(2048)
+  accessTokenExpireTime DateTime?
+  session              String?   @db.VarChar(2048)
+  status               RemoteUserStatus @default(Pending)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+// Enums for user relationships
+enum RemoteUserStatus {
   Pending
   Active
   Blocked
 }
 
-enum SharedUserDirection {
-  Incoming
-  Outgoing
+enum RelationshipType {
+  Share  // Private, encrypted sharing with approval
+  Block  // Block private access
 }
 
-model SharedUser {
-  id                String              @id @default(cuid())
-  user              User                @relation(fields: [userId], references: [id])
-  userId            String
-  comment           String
-  sharedUserId      String
-  sharedUserEmail   String
-  sharedUserName    String
-  sharedUserAddress String
-  status            SharedUserStatus
-  direction         SharedUserDirection
-
-  // Encryption keys
-  sharedUserTempSymmetricKey String @db.VarChar(2048)
-  sharedUserPublicKey        String @db.VarChar(2048)
-
-  // Token and session
-  accessToken           String?   @db.VarChar(2048)
-  accessTokenExpireTime DateTime?
-  session               String?   @db.VarChar(2048)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum RelationshipStatus {
+  Pending
+  Active
+  Blocked
 }
+
+// Private sharing relationships (requires approval & encryption)
+model UserRelationship {
+  id               String             @id @default(cuid())
+  fromUser         User               @relation("FromUser", fields: [fromUserId], references: [id])
+  fromUserId       String
+  toUser           User               @relation("ToUser", fields: [toUserId], references: [id])
+  toUserId         String
+  relationshipType RelationshipType
+  status           RelationshipStatus @default(Pending)
+  permissions      Json?              // What can be shared privately
+  comment          String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@unique([fromUserId, toUserId])
+}
+
+// Public follow relationships (like RSS subscription - no approval needed)
+// model Follow {
+//   id          String   @id @default(cuid())
+//   follower    User     @relation("Follower", fields: [followerId], references: [id])
+//   followerId  String
+//   following   User     @relation("Following", fields: [followingId], references: [id])
+//   followingId String
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   @@unique([followerId, followingId])
+// }
