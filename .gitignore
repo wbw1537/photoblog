@@ -13,4 +13,9 @@ test.ts
 
 .vscode/
 
+package-lock.json
+
+# agents
 CLAUDE.md
+AGENT.md
+GEMINI.md
