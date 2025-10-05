@@ -57,6 +57,16 @@ export class UserRepository {
     });
   }
 
+  async findById(id: string) {
+    return await this.prismaClient.user.findUnique({
+      where: { id },
+      include: {
+        localUser: true,
+        remoteUser: true,
+      }
+    });
+  }
+
   async findLocalUserByEmail(email: string) {
     return await this.prismaClient.user.findUnique({
       where: { email, type: UserType.Normal },
@@ -121,6 +131,52 @@ export class UserRepository {
       include: {
         localUser: true
       }
+    });
+  }
+
+  async upsertRemoteUser(email: string, name: string, instanceUrl: string, remoteUserData: { [key: string]: any }) {
+    return await this.prismaClient.user.upsert({
+      where: { email },
+      update: {
+        name,
+        instanceUrl,
+        remoteUser: {
+          update: {
+            ...remoteUserData
+          }
+        }
+      },
+      create: {
+        email,
+        name,
+        instanceUrl,
+        type: UserType.Remote,
+        remoteUser: {
+          create: {
+            instanceUrl,
+            ...remoteUserData
+          }
+        }
+      },
+      include: {
+        remoteUser: true
+      }
+    });
+  }
+
+  async updateRemoteUser(userId: string, remoteUserData: { [key: string]: any }) {
+    return await this.prismaClient.user.update({
+      where: { id: userId },
+      data: {
+        remoteUser: {
+          update: {
+            ...remoteUserData,
+          },
+        },
+      },
+      include: {
+        remoteUser: true,
+      },
     });
   }
 }

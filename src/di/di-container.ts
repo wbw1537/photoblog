@@ -6,14 +6,14 @@ import { PhotoRepository } from '../repositories/photo.repository.js';
 import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { BlogRepository } from '../repositories/blog.repository.js';
 import { TagRepository } from '../repositories/tag.repository.js';
-import { SharedUserRepository } from '../repositories/shared-user.repository.js';
+import { UserRelationshipRepository } from '../repositories/user-relationship.repository.js';
 
 import { AuthMiddleware } from '../middleware/auth.middleware.js';
 
 import { ConvertPhotoJob } from '../jobs/convert-photo.job.js';
 import { PhotoScanJob } from '../jobs/photo-scan.job.js';
 
-import { SharedUserConnector } from '../connectors/shared-user.connector.js';
+import { RemoteUserConnector } from '../connectors/remote-user.connector.js';
 
 import { PhotoScanService } from '../services/photo-scan.service.js';
 import { ScanStatusService } from '../services/scan-status.service.js';
@@ -50,7 +50,7 @@ const photoRepository = new PhotoRepository(prismaClient);
 const photoFileRepository = new PhotoFileRepository(prismaClient);
 const blogRepository = new BlogRepository(prismaClient)
 const tagRepository = new TagRepository(prismaClient);
-const sharedUserRepository = new SharedUserRepository(prismaClient);
+const userRelationshipRepository = new UserRelationshipRepository(prismaClient);
 
 const scanStatusService = new ScanStatusService();
 
@@ -66,7 +66,7 @@ const convertPhotoJob = new ConvertPhotoJob(logger);
 const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFileRepository, scanStatusService, convertPhotoJob, logger);
 
 // Connectors layer instances
-const sharedUserConnector = new SharedUserConnector(logger);
+const remoteUserConnector = new RemoteUserConnector(logger);
 
 // Service layer instances
 const photoScanService = new PhotoScanService(scanStatusService, photoScanJob);
@@ -75,7 +75,7 @@ const blogService = new BlogService(blogRepository, tagRepository);
 const tagService = new TagService(tagRepository, photoRepository, blogRepository);
 const photoService = new PhotoService(photoRepository, tagRepository);
 const photoFileService = new PhotoFileService(photoFileRepository);
-const sharedUserService = new SharedUserService(logger, sharedUserRepository, userRepository, sharedUserConnector);
+const sharedUserService = new SharedUserService(logger, userRelationshipRepository, userRepository, remoteUserConnector);
 
 // Controller layer instances
 const userController = new UserController(userService);
