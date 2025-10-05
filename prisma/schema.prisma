@@ -186,7 +186,7 @@ model RemoteUser {
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId               String    @unique
   instanceUrl          String
-  publicKey            String    @db.VarChar(2048)
+  publicKey            String?   @db.VarChar(2048)
   tempSymmetricKey     String?   @db.VarChar(2048)
   accessToken          String?   @db.VarChar(2048)
   accessTokenExpireTime DateTime?
