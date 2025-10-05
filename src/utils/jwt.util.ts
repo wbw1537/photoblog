@@ -1,11 +1,13 @@
-import jwt, { JwtPayload } from 'jsonwebtoken';
+import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import log4js from "log4js";
 
-import { User } from '@prisma/client';
+import { User, Prisma } from '@prisma/client';
 import { Token, UserInfoDTO } from '../models/user.model.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
-import { UserJwtPayloadWithSession } from '../models/shared-user.model.js';
 
+type UserWithLocalUser = Prisma.UserGetPayload<{
+  include: { localUser: true }
+}>;
 
 const logger = log4js.getLogger();
 
@@ -17,7 +19,7 @@ const RENEW_REFRESH_TOKEN_TIME_SLOT = 7 * 24 * 60 * 60 * 1000; // 7 days
 const SHARED_USER_RENEW_REFRESH_TOKEN_TIME_SLOT = 1 * 24 * 60 * 60 * 1000; // 1 days
 
 function generateUtilizedToken(sign: object, expiresIn: string, jwtSecret: string): Token {
-  const token = jwt.sign(sign, jwtSecret, { expiresIn: expiresIn });
+  const token = jwt.sign(sign, jwtSecret, { expiresIn: expiresIn } as SignOptions);
   const expiresAt = convertExpireInToMillis(expiresIn) + Date.now();
 
   return {
@@ -27,42 +29,47 @@ function generateUtilizedToken(sign: object, expiresIn: string, jwtSecret: strin
   };
 }
 
-export function generateAccessToken(user: User): Token {
+export function generateAccessToken(user: UserWithLocalUser): Token {
   const userPayload: UserInfoDTO = {
     id: user.id,
     name: user.name,
     email: user.email,
     type: user.type,
-    address: user.address,
-    basePath: user.basePath,
-    cachePath: user.cachePath
+    instanceUrl: user.instanceUrl,
+    basePath: user.localUser?.basePath || '',
+    cachePath: user.localUser?.cachePath || ''
   };
   return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, JWT_SECRET);
 }
 
-export function generateAccessTokenForSharedUser(userWithSession: UserJwtPayloadWithSession): Token {
-  const userPayload: UserJwtPayloadWithSession = {
-    id: userWithSession.id,
-    name: userWithSession.name,
-    email: userWithSession.email,
-    type: userWithSession.type,
-    address: userWithSession.address,
-    basePath: userWithSession.basePath,
-    cachePath: userWithSession.cachePath,
-    session: userWithSession.session
+interface FederatedUserPayload {
+  id: string;
+  name: string;
+  email: string;
+  instanceUrl: string;
+  session: string;
+}
+
+export function generateFederatedAccessToken(user: User, session: string): Token {
+  const userPayload: FederatedUserPayload = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    instanceUrl: user.instanceUrl,
+    session: session
   };
   return generateUtilizedToken(userPayload, ACCESS_TOKEN_EXPIRATION, JWT_SECRET);
 }
 
-export function generateRefreshToken(user: User): Token {
+export function generateRefreshToken(user: UserWithLocalUser): Token {
   const userPayload: UserInfoDTO = {
     id: user.id,
     name: user.name,
     email: user.email,
     type: user.type,
-    address: user.address,
-    basePath: user.basePath,
-    cachePath: user.cachePath
+    instanceUrl: user.instanceUrl,
+    basePath: user.localUser?.basePath || '',
+    cachePath: user.localUser?.cachePath || ''
   };
   return generateUtilizedToken(userPayload, REFRESH_TOKEN_EXPIRATION, JWT_SECRET);
 }

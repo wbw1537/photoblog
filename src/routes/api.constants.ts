@@ -44,7 +44,7 @@ export const API_URLS = {
     BASE: '/v1/shared-user',
     FETCH_REMOTE: '/v1/shared-user/fetch-remote',
     INIT: '/v1/shared-user/init',
-    ACTIVE: '/v1/shared-user/active/:id',
+    APPROVE: '/v1/shared-user/approve/:id',
     BLOCK: '/v1/shared-user/block/:id',
     REQUEST: '/v1/shared-user/request',
     // Public endpoints

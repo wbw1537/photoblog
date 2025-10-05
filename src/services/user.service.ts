@@ -12,13 +12,13 @@ export class UserService {
   ) { }
 
   async checkUserExists(email: string): Promise<boolean> {
-    const user = await this.userRepository.findByEmail(email);
+    const user = await this.userRepository.findLocalUserByEmail(email);
     return !!user;
   }
 
   async register(user: CreateUserDTO): Promise<UserInfoDTO> {
     // Check if the email already exists
-    const existingUser = await this.userRepository.findByEmail(user.email);
+    const existingUser = await this.userRepository.findLocalUserByEmail(user.email);
     if (existingUser) {
       throw new PhotoBlogError('Email already exists', 409);
     }
@@ -31,28 +31,22 @@ export class UserService {
     // Export the keys as PEM strings
     const publicKeyString = publicKey.export({ type: 'pkcs1', format: 'pem' }).toString();
     const privateKeyString = privateKey.export({ type: 'pkcs1', format: 'pem' }).toString();
-    const newUser = await this.userRepository.create(user, publicKeyString, privateKeyString);
+    const newUser = await this.userRepository.createLocalUser(user, publicKeyString, privateKeyString);
     const userResponse: UserInfoDTO = {
       id: newUser.id,
       name: newUser.name,
       email: newUser.email,
       type: newUser.type,
-      address: newUser.address,
-      basePath: newUser.basePath,
-      cachePath: newUser.cachePath,
+      instanceUrl: newUser.instanceUrl,
+      // Obviously localUser is not null
+      basePath: newUser.localUser!.basePath,
+      cachePath: newUser.localUser!.cachePath,
     };
     return userResponse;
   }
 
   async login(email: string, password: string): Promise<UserLoginResponseDTO> {
-    const user = await this.userRepository.findByEmail(email);
-    if (!user) {
-      throw new PhotoBlogError('Login credential failed', 403);
-    }
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
-      throw new PhotoBlogError('Login credential failed', 403);
-    }
+    const user = await this.validateLoginUser(email, password);
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
@@ -62,25 +56,42 @@ export class UserService {
       name: user.name,
       email: user.email,
       type: user.type,
-      address: user.address,
-      basePath: user.basePath,
-      cachePath: user.cachePath,
+      instanceUrl: user.instanceUrl,
+      // Validated localUser non-null
+      basePath: user.localUser!.basePath,
+      cachePath: user.localUser!.cachePath,
       accessToken,
       refreshToken,
     };
     return userResponse;
   }
 
+  private async validateLoginUser(email: string, password: string) {
+   const user = await this.userRepository.findLocalUserByEmail(email);
+    if (!user) {
+      throw new PhotoBlogError('Login credential failed', 403);
+    }
+    if (!user.localUser) {
+      throw new PhotoBlogError('Local user property not found', 500);
+    }
+    const passwordMatch = await bcrypt.compare(password, user.localUser.password);
+    if (!passwordMatch) {
+      throw new PhotoBlogError('Login credential failed', 403);
+    }
+    return user;
+  }
+
   async getUserInfo(userId: string): Promise<UserInfoDTO> {
-    const user = await this.getUserById(userId);
+    const user = await this.getValidatedLocalUserById(userId);
     const userResponse: UserInfoDTO = {
       id: user.id,
       name: user.name,
       email: user.email,
       type: user.type,
-      address: user.address,
-      basePath: user.basePath,
-      cachePath: user.cachePath,
+      // Validated localUser non-null
+      instanceUrl: user.instanceUrl,
+      basePath: user.localUser!.basePath,
+      cachePath: user.localUser!.cachePath,
     };
     return userResponse;
   }
@@ -91,7 +102,7 @@ export class UserService {
       modifyRequest.password = hashedPassword;
     }
     if (modifyRequest.email) {
-      const existingUser = await this.userRepository.findByEmail(modifyRequest.email);
+      const existingUser = await this.userRepository.findLocalUserByEmail(modifyRequest.email);
       if (existingUser && existingUser.id !== userId) {
         throw new PhotoBlogError('Email already exists', 409);
       }
@@ -102,16 +113,18 @@ export class UserService {
       name: updatedUser.name,
       email: updatedUser.email,
       type: updatedUser.type,
-      address: updatedUser.address,
-      basePath: updatedUser.basePath,
-      cachePath: updatedUser.cachePath,
+      instanceUrl: updatedUser.instanceUrl,
+      basePath: updatedUser.localUser!.basePath,
+      cachePath: updatedUser.localUser!.cachePath,
     };
     return userResponse;
   }
 
 
   async refreshToken(refreshToken: string): Promise<TokenResponseDTO> {
-    const user = verifyToken(refreshToken);
+    const tokenPayload = verifyToken(refreshToken);
+    const user = await this.getValidatedLocalUserById(tokenPayload.id);
+    
     const accessToken = generateAccessToken(user);
     if (shouldRenewRefreshToken(refreshToken)) {
       const newRefreshToken = generateRefreshToken(user);
@@ -131,14 +144,17 @@ export class UserService {
       id: user.id,
       name: user.name,
       email: user.email,
-      address: user.address,
+      instanceUrl: user.instanceUrl,
     }));
   }
 
-  private async getUserById(userId: string) {
-    const user = await this.userRepository.findById(userId);
+  private async getValidatedLocalUserById(userId: string) {
+    const user = await this.userRepository.findLocalUserById(userId);
     if (!user) {
       throw new PhotoBlogError('User not found', 404);
+    }
+    if (!user.localUser) {
+      throw new PhotoBlogError('Local user property not found', 500);
     }
     return user;
   }
