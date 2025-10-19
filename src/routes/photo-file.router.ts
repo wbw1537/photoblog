@@ -1,22 +1,68 @@
-import express from 'express';
-import { authenticate } from '../di/di-container.js';
-import { API_URLS } from './api.constants.js';
+import express, { NextFunction, Request, Response, RequestHandler } from 'express';
+import { PhotoFileService } from "../services/photo-file.service.js";
+import { FileResolution } from "../models/photo-file.model.js";
+import { PhotoBlogError } from "../errors/photoblog.error.js";
 
-import { photoFileController } from '../di/di-container.js';
+export function createPhotoFileRouter(
+  photoFileService: PhotoFileService,
+  authenticate: RequestHandler
+) {
+  const photoFileRouter = express.Router();
 
-const photoFileRouter = express.Router();
+  photoFileRouter.get('/v1/photos/view/:fileId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.body.user;
+      const fileId = req.params.fileId;
+      const resolution = req.query.resolution as FileResolution;
+      if (!resolution) {
+        throw new PhotoBlogError('Resolution is required', 400);
+      }
+      const photoPath = await photoFileService.getPhotoFileImageById(user, fileId as string, resolution);
+      res.sendFile(photoPath);
+    } catch (error) {
+      next(error);
+    }
+  });
 
-photoFileRouter.get(API_URLS.PHOTO_FILE.VIEW, authenticate, (req, res, next) => 
-  photoFileController.getPhotoFileImageById(req, res, next));
+  photoFileRouter.get('/v1/photos/preview/:fileId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.body.user;
+      const fileId = req.params.fileId;
+      const resolution = FileResolution.PREVIEW;
+      const photoPath = await photoFileService.getPhotoFileImageById(user, fileId as string, resolution);
+      res.sendFile(photoPath);
+    } catch (error) {
+      next(error);
+    }
+  });
 
-photoFileRouter.get(API_URLS.PHOTO_FILE.PREVIEW, authenticate, (req, res, next) => 
-  photoFileController.getPreviewPhotoFileById(req, res, next));
+  // Private routes
+  photoFileRouter.get('/private/v1/photos/view/:fileId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.body.user;
+      const fileId = req.params.fileId;
+      const resolution = req.query.resolution as FileResolution;
+      if (!resolution) {
+        throw new PhotoBlogError('Resolution is required', 400);
+      }
+      const photoPath = await photoFileService.getPhotoFileImageById(user, fileId as string, resolution);
+      res.sendFile(photoPath);
+    } catch (error) {
+      next(error);
+    }
+  });
 
-// Private routes
-photoFileRouter.get(API_URLS.PHOTO_FILE.PRIVATE_VIEW, authenticate, (req, res, next) => 
-  photoFileController.getPhotoFileImageById(req, res, next));
+  photoFileRouter.get('/private/v1/photos/preview/:fileId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.body.user;
+      const fileId = req.params.fileId;
+      const resolution = FileResolution.PREVIEW;
+      const photoPath = await photoFileService.getPhotoFileImageById(user, fileId as string, resolution);
+      res.sendFile(photoPath);
+    } catch (error) {
+      next(error);
+    }
+  });
 
-photoFileRouter.get(API_URLS.PHOTO_FILE.PRIVATE_PREVIEW, authenticate, (req, res, next) => 
-  photoFileController.getPreviewPhotoFileById(req, res, next));
-
-export default photoFileRouter;
+  return photoFileRouter;
+}

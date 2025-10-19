@@ -1,12 +1,22 @@
-import express from 'express';
-import { authenticate } from '../di/di-container.js';
-import { API_URLS } from './api.constants.js';
+import express, { NextFunction, Request, Response, RequestHandler } from 'express';
+import { ScanStatusService } from "../services/scan-status.service.js";
 
-import { scanStatusController } from '../di/di-container.js';
+export function createScanStatusRouter(
+  scanStatusService: ScanStatusService,
+  authenticate: RequestHandler
+) {
+  const scanStatusRouter = express.Router();
 
-const scanStatusRouter = express.Router();
+  scanStatusRouter.get('/v1/scan-status', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.body.user.id;
 
-scanStatusRouter.get(API_URLS.SCAN_STATUS.BASE, authenticate, (req, res, next) => 
-  scanStatusController.getStatus(req, res, next));
+    try {
+      const status = scanStatusService.getScanStatus(userId);
+      res.status(200).json(status);
+    } catch (error: unknown) {
+      next(error);
+    }
+  });
 
-export default scanStatusRouter;
+  return scanStatusRouter;
+}

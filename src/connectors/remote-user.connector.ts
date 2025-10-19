@@ -3,7 +3,6 @@ import { User } from "@prisma/client";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
 import { SessionRequestDTO, SessionResponseDTO, SharedUserContextRequestDTO, SharedUserExchangeKeyRequest, SharedUserExchangeKeyRespond, SharedUserInitRemoteRequestDTO, SharedUserValidateRequest } from "../models/shared-user.model.js";
 import { PublicUserResponseDTO } from "../models/user.model.js";
-import { API_URLS } from "../routes/api.constants.js"
 import { Logger } from "log4js";
 
 export class RemoteUserConnector {
@@ -12,7 +11,7 @@ export class RemoteUserConnector {
   ) {}
 
   async getRemoteUsers(remoteInstanceUrl: string): Promise<PublicUserResponseDTO> {
-    const requestUrl = `http://${remoteInstanceUrl}/api${API_URLS.USER.PUBLIC_USERS}`;
+    const requestUrl = `http://${remoteInstanceUrl}/api/public/v1/users`;
     const response = await fetch(requestUrl, {
       method: "GET",
       headers: {
@@ -27,7 +26,7 @@ export class RemoteUserConnector {
   }
 
   async sendRemoteSharingRequest(remoteInstanceUrl: string, requestBody: SharedUserInitRemoteRequestDTO) {
-    const requestUrl = `http://${remoteInstanceUrl}/api${API_URLS.SHARED_USER.PUBLIC_INIT}`;
+    const requestUrl = `http://${remoteInstanceUrl}/api/public/v1/shared-user/init`;
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
@@ -43,7 +42,7 @@ export class RemoteUserConnector {
   }
 
   async exchangeEncryptedPublicKey(remoteInstanceUrl: string, requestBody: SharedUserExchangeKeyRequest): Promise<SharedUserExchangeKeyRespond> {
-    const requestUrl = `http://${remoteInstanceUrl}/api${API_URLS.SHARED_USER.PUBLIC_EXCHANGE}`;
+    const requestUrl = `http://${remoteInstanceUrl}/api/public/v1/shared-user/exchange`;
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
@@ -64,7 +63,7 @@ export class RemoteUserConnector {
   }
 
   async validateRemotePublicKey(remoteInstanceUrl: string, requestBody: SharedUserValidateRequest): Promise<boolean> {
-    const requestUrl = `http://${remoteInstanceUrl}/api${API_URLS.SHARED_USER.PUBLIC_VALIDATE}`;
+    const requestUrl = `http://${remoteInstanceUrl}/api/public/v1/shared-user/validate`;
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: {
@@ -80,7 +79,7 @@ export class RemoteUserConnector {
   }
 
   async getSession(remoteInstanceUrl: string, requestBody: SessionRequestDTO): Promise<SessionResponseDTO> {
-    const requestUrl = `http://${remoteInstanceUrl}/api${API_URLS.SHARED_USER.PUBLIC_SESSION}`;
+    const requestUrl = `http://${remoteInstanceUrl}/api/public/v1/shared-user/session`;
     const response = await fetch(requestUrl, {
       method: "POST",
       headers: {

@@ -24,14 +24,14 @@ import { PhotoService } from '../services/photo.service.js';
 import { PhotoFileService } from '../services/photo-file.service.js';
 import { SharedUserService } from '../services/shared-user.service.js';
 
-import { UserController } from '../controllers/user.controller.js';
-import { PhotoScanController } from '../controllers/photo-scan.controller.js';
-import { ScanStatusController } from '../controllers/scan-status.controller.js';
-import { BlogController } from '../controllers/blog.controller.js';
-import { TagController } from '../controllers/tag.controller.js';
-import { PhotoController } from '../controllers/photo.controller.js';
-import { PhotoFileController } from '../controllers/photo-file.controller.js';
-import { SharedUserController } from '../controllers/shared-user.controller.js';
+import { createUserRouter } from '../routes/user.router.js';
+import { createPhotoScanRouter } from '../routes/photo-scan.router.js';
+import { createScanStatusRouter } from '../routes/scan-status.router.js';
+import { createBlogRouter } from '../routes/blog.router.js';
+import { createTagRouter } from '../routes/tag.router.js';
+import { createPhotoRouter } from '../routes/photo.router.js';
+import { createPhotoFileRouter } from '../routes/photo-file.router.js';
+import { createSharedUserRouter } from '../routes/shared-user.route.js';
 import { EncryptionMiddleware } from '../middleware/encryption.middleware.js';
 
 // Logger instance
@@ -77,27 +77,22 @@ const photoService = new PhotoService(photoRepository, tagRepository);
 const photoFileService = new PhotoFileService(photoFileRepository);
 const sharedUserService = new SharedUserService(logger, userRelationshipRepository, userRepository, remoteUserConnector);
 
-// Controller layer instances
-const userController = new UserController(userService);
-const photoScanController = new PhotoScanController(photoScanService);
-const scanStatusController = new ScanStatusController(scanStatusService);
-const blogController = new BlogController(blogService)
-const tagController = new TagController(tagService);
-const photoController = new PhotoController(photoService);
-const photoFileController = new PhotoFileController(photoFileService);
-const sharedUserController = new SharedUserController(sharedUserService);
+// Router factory functions
+const createRouters = () => ({
+  userRouter: createUserRouter(userService, authenticate),
+  photoScanRouter: createPhotoScanRouter(photoScanService, authenticate),
+  scanStatusRouter: createScanStatusRouter(scanStatusService, authenticate),
+  blogRouter: createBlogRouter(blogService, authenticate),
+  tagRouter: createTagRouter(tagService, authenticate),
+  photoRouter: createPhotoRouter(photoService, authenticate),
+  photoFileRouter: createPhotoFileRouter(photoFileService, authenticate),
+  sharedUserRouter: createSharedUserRouter(sharedUserService, authenticate)
+});
 
 
 // Export all initialized instances
 export {
   authenticate,
   encrypt,
-  userController,
-  photoScanController,
-  scanStatusController,
-  blogController,
-  tagController,
-  photoController,
-  photoFileController,
-  sharedUserController
+  createRouters
 };
