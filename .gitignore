@@ -8,10 +8,14 @@ dist/
 testPhotoPath/
 thumbnails/
 
+# logs
+*.log
+
 # test.ts
 test.ts
 
 .vscode/
+.idea/
 
 package-lock.json
 

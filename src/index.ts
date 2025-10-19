@@ -2,14 +2,7 @@ import express, { Application, Request, Response } from 'express';
 import { errorHandler } from './middleware/error-handler.middleware.js';
 import cors from 'cors';
 
-import photoScanRouter from './routes/photo-scan.router.js';
-import userRouter from './routes/user.router.js';
-import scanStatusRouter from './routes/scan-status.router.js';
-import blogRouter from './routes/blog.router.js';
-import tagRouter from './routes/tag.router.js';
-import photoRouter from './routes/photo.router.js';
-import photoFileRouter from './routes/photo-file.router.js';
-import sharedUserRouter from './routes/shared-user.route.js';
+import { createRouters } from './di/di-container.js';
 
 const app: Application = express();
 
@@ -21,14 +14,17 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Welcome to my TypeScript Express.js app!');
 });
 
-app.use('/', photoScanRouter);
-app.use('/', userRouter);
-app.use('/', scanStatusRouter);
-app.use('/', blogRouter);
-app.use('/', tagRouter);
-app.use('/', photoRouter);
-app.use('/', photoFileRouter);
-app.use('/', sharedUserRouter);
+// Create all routers using the factory pattern
+const routers = createRouters();
+
+app.use('/api', routers.photoScanRouter);
+app.use('/api', routers.userRouter);
+app.use('/api', routers.scanStatusRouter);
+app.use('/api', routers.blogRouter);
+app.use('/api', routers.tagRouter);
+app.use('/api', routers.photoRouter);
+app.use('/api', routers.photoFileRouter);
+app.use('/api', routers.sharedUserRouter);
 
 // Handle unknown routes (404 handler)
 app.use((req: Request, res: Response) => {
