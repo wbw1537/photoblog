@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response, RequestHandler } from 'express';
 import { CreateUserDTO, ModifyUserInfoRequestDTO, TokenResponseDTO } from "../models/user.model.js";
 import { UserService } from "../services/user.service.js";
+import { PhotoBlogError } from "../errors/photoblog.error.js";
 
 export function createUserRouter(
   userService: UserService,
@@ -33,8 +34,7 @@ export function createUserRouter(
     try {
       const { email } = req.body;
       if (!email || typeof email !== 'string') {
-        res.status(400).json({ error: 'Email parameter is required' });
-        return;
+        throw new PhotoBlogError('Email parameter is required', 400);
       }
       const exists = await userService.checkUserExists(email);
       res.status(200).json({ exists });
@@ -68,8 +68,7 @@ export function createUserRouter(
     try {
       const { refreshToken } = req.body;
       if (!refreshToken || typeof refreshToken !== 'string') {
-        res.status(400).json({ error: 'Refresh token is required' });
-        return;
+        throw new PhotoBlogError('Refresh token is required', 400);
       }
       const tokens: TokenResponseDTO = await userService.refreshToken(refreshToken);
       res.status(200).json(tokens);

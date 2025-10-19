@@ -45,8 +45,7 @@ export function createSharedUserRouter(
     try {
       const remoteAddress = req.query.remoteAddress as string;
       if (!remoteAddress) {
-        res.status(400).json({ error: "Missing remoteAddress query" });
-        return;
+        throw new PhotoBlogError("Missing remoteAddress query", 400);
       }
       const remoteUsers = await sharedUserService.fetchRemoteUsers(remoteAddress);
       res.status(200).json(remoteUsers);
@@ -97,7 +96,7 @@ export function createSharedUserRouter(
       const userId = req.body.user.id;
       const sharedUserContextRequest: SharedUserContextRequestDTO = req.body;
       if (!sharedUserContextRequest?.requestToUserInfo?.id || !sharedUserContextRequest.requestUrl) {
-        return res.status(400).json({ error: "Missing required fields for proxying" });
+        throw new PhotoBlogError("Missing required fields for proxying", 400);
       }
 
       const response = await sharedUserService.requestSharedUser(userId, sharedUserContextRequest);
@@ -125,7 +124,7 @@ export function createSharedUserRouter(
       const sharedUserRequest: SharedUserInitRemoteRequestDTO = req.body;
       // Basic validation
       if (!sharedUserRequest?.requestFromUserInfo?.id || !sharedUserRequest?.requestToUserInfo?.id) {
-        return res.status(400).json({ error: "Missing required user info fields" });
+        throw new PhotoBlogError("Missing required user info fields", 400);
       }
       validateTimestamp(sharedUserRequest.timestamp);
       const response = await sharedUserService.receiveRemoteRelationshipRequest(sharedUserRequest);
@@ -140,7 +139,7 @@ export function createSharedUserRouter(
     try {
       const sharedUserExchangeKeyRequest: SharedUserExchangeKeyRequest = req.body;
       if (!sharedUserExchangeKeyRequest?.requestFromUserInfo?.id || !sharedUserExchangeKeyRequest?.requestToUserInfo?.id) {
-        return res.status(400).json({ error: "Missing user info in request" });
+        throw new PhotoBlogError("Missing user info in request", 400);
       }
       validateTimestamp(sharedUserExchangeKeyRequest.timestamp);
       const response = await sharedUserService.exchangeRemotePublicKey(sharedUserExchangeKeyRequest);
@@ -155,7 +154,7 @@ export function createSharedUserRouter(
     try {
       const sharedUserValidateRequest: SharedUserValidateRequest = req.body;
       if (!sharedUserValidateRequest?.requestFromUserInfo?.id || !sharedUserValidateRequest?.requestToUserInfo?.id) {
-        return res.status(400).json({ error: "Missing user info in request" });
+        throw new PhotoBlogError("Missing user info in request", 400);
       }
       validateTimestamp(sharedUserValidateRequest.timestamp);
       await sharedUserService.validateRemotePublicKey(sharedUserValidateRequest);
@@ -170,7 +169,7 @@ export function createSharedUserRouter(
     try {
       const sessionRequest: SessionRequestDTO = req.body;
       if (!sessionRequest?.requestFromUserInfo?.id || !sessionRequest?.requestToUserInfo?.id) {
-        return res.status(400).json({ error: "Missing user info in request" });
+        throw new PhotoBlogError("Missing user info in request", 400);
       }
       validateTimestamp(sessionRequest.timestamp);
       const session = await sharedUserService.getSession(sessionRequest);

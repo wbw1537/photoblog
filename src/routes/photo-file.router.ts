@@ -24,14 +24,16 @@ export function createPhotoFileRouter(
     }
   });
 
-  photoFileRouter.get('/v1/photos/preview/:fileId', authenticate, (req: Request, res: Response, next: NextFunction) => {
-    const user = req.body.user;
-    const fileId = req.params.fileId;
-    const resolution = FileResolution.PREVIEW;
-
-    photoFileService.getPhotoFileImageById(user, fileId as string, resolution)
-      .then(photoPath => res.sendFile(photoPath))
-      .catch(error => next(error));
+  photoFileRouter.get('/v1/photos/preview/:fileId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.body.user;
+      const fileId = req.params.fileId;
+      const resolution = FileResolution.PREVIEW;
+      const photoPath = await photoFileService.getPhotoFileImageById(user, fileId as string, resolution);
+      res.sendFile(photoPath);
+    } catch (error) {
+      next(error);
+    }
   });
 
   // Private routes
@@ -50,14 +52,16 @@ export function createPhotoFileRouter(
     }
   });
 
-  photoFileRouter.get('/private/v1/photos/preview/:fileId', authenticate, (req: Request, res: Response, next: NextFunction) => {
-    const user = req.body.user;
-    const fileId = req.params.fileId;
-    const resolution = FileResolution.PREVIEW;
-
-    photoFileService.getPhotoFileImageById(user, fileId as string, resolution)
-      .then(photoPath => res.sendFile(photoPath))
-      .catch(error => next(error));
+  photoFileRouter.get('/private/v1/photos/preview/:fileId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.body.user;
+      const fileId = req.params.fileId;
+      const resolution = FileResolution.PREVIEW;
+      const photoPath = await photoFileService.getPhotoFileImageById(user, fileId as string, resolution);
+      res.sendFile(photoPath);
+    } catch (error) {
+      next(error);
+    }
   });
 
   return photoFileRouter;
