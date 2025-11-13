@@ -8,6 +8,7 @@ This guide explains how to manage and maintain the project's requirements docume
 doc/
 ├── requirements.md        # Source of truth - detailed requirements by feature
 ├── feature-list.md        # Generated - release-focused view by version
+├── devops-tasks.md        # DevOps and infrastructure tasks (separate from features)
 └── REQUIREMENTS_GUIDE.md  # This file
 ```
 
@@ -70,6 +71,8 @@ Each requirement has TWO status fields:
 | BLOG | Blog Management | PB-BLOG-01 |
 | TAG | Tag Management | PB-TAG-01 |
 | NETWORK | Federation & Networking | PB-NETWORK-01 |
+
+**Note**: DevOps and infrastructure tasks are tracked separately in `devops-tasks.md` and use their own area codes (DOCKER, CICD, CONFIG, etc.).
 
 ### Adding New Feature Areas
 
