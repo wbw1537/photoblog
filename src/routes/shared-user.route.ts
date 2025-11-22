@@ -22,7 +22,7 @@ export function createSharedUserRouter(
   // Get all relationships for the current user
   sharedUserRouter.get('/v1/shared-user', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const getRelationshipsRequest: GetRelationshipsRequestDTO = {
         name: req.query.name as string,
         email: req.query.email as string,
@@ -33,7 +33,7 @@ export function createSharedUserRouter(
         skip: parseInt(req.query.skip as string) || 0,
         take: parseInt(req.query.take as string) || 10,
       }
-      const sharedUsers = await sharedUserService.getSharedUsers(userId, getRelationshipsRequest);
+      const sharedUsers = await sharedUserService.getSharedUsers(user.id, getRelationshipsRequest);
       res.status(200).json(sharedUsers);
     } catch (error: unknown) {
       next(error);
@@ -68,9 +68,9 @@ export function createSharedUserRouter(
   // Approve a pending incoming relationship
   sharedUserRouter.post('/v1/shared-user/approve/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const relationshipId = req.params.id;
-      const response = await sharedUserService.approveSharingRequest(userId, relationshipId);
+      const response = await sharedUserService.approveSharingRequest(user.id, relationshipId);
       res.status(200).json(response);
     } catch (error: unknown) {
       next(error);
@@ -80,9 +80,9 @@ export function createSharedUserRouter(
   // Block an active relationship
   sharedUserRouter.post('/v1/shared-user/block/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const relationshipId = req.params.id;
-      const response = await sharedUserService.blockRelationship(userId, relationshipId);
+      const response = await sharedUserService.blockRelationship(user.id, relationshipId);
       res.status(200).json(response);
     } catch (error: unknown) {
       next(error);

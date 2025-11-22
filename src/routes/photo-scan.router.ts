@@ -8,10 +8,9 @@ export function createPhotoScanRouter(
   const photoScanRouter = express.Router();
 
   photoScanRouter.post('/v1/scan', authenticate, async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.body.user.id;
-
     try {
-      const jobId = await photoScanService.scan(userId);
+      const user = req.body.user;
+      const jobId = await photoScanService.scan(user.id);
       res.status(202).json({ "jobId": jobId });
     } catch (error: unknown) {
       next(error);
@@ -19,10 +18,9 @@ export function createPhotoScanRouter(
   });
 
   photoScanRouter.post('/v1/delta-scan', authenticate, async (req: Request, res: Response, next: NextFunction) => {
-    const userId = req.body.user.id;
-
     try {
-      const jobId = await photoScanService.deltaScan(userId);
+      const user = req.body.user;
+      const jobId = await photoScanService.deltaScan(user.id);
       res.status(200).json({ "jobId": jobId });
     } catch (error: unknown) {
       next(error);

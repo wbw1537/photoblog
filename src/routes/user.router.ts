@@ -45,24 +45,23 @@ export function createUserRouter(
 
   userRouter.get('/v1/user-info', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
-      const user = await userService.getUserInfo(userId);
-      res.status(200).json(user);
+      const user = req.body.user;
+      const userInfo = await userService.getUserInfo(user.id);
+      res.status(200).json(userInfo);
     } catch (err: unknown) {
       next(err);
     }
   });
 
-  userRouter.put('/v1/user-info', authenticate, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const userId = req.body.user.id;
-      const modifyRequest: ModifyUserInfoRequestDTO = req.body;
-      const user = await userService.modifyUserInfo(userId, modifyRequest);
-      res.status(200).json(user);
-    } catch (err: unknown) {
-      next(err);
-    }
-  });
+    userRouter.put('/v1/user-info', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { user, ...modifyRequest } = req.body;
+        const updatedUser = await userService.modifyUserInfo(user.id, modifyRequest);
+        res.status(200).json(updatedUser);
+      } catch (error) {
+        next(error);
+      }
+    });
 
   userRouter.post('/v1/refresh-token', async (req: Request, res: Response, next: NextFunction) => {
     try {

@@ -76,13 +76,18 @@ describe('Blog Router', () => {
 
   describe('POST /v1/blogs', () => {
     it('should create a blog successfully', async () => {
-      const newBlog = { title: 'New Blog' };
+      const newBlog = {
+        title: 'New Blog',
+        content: 'This is a new blog post.',
+        blogType: 'Article',
+        blogMedia: [],
+      };
       const createdBlog = { id: '1', ...newBlog };
       mockBlogService.postBlog.mockResolvedValue(createdBlog);
 
       const response = await request(app)
         .post('/blogs/v1/blogs')
-        .send({ blog: newBlog });
+        .send(newBlog);
 
       expect(response.status).toBe(201);
       expect(response.body).toEqual(createdBlog);

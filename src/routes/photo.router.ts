@@ -11,6 +11,7 @@ export function createPhotoRouter(
 // Public routes
 photoRouter.get('/v1/photos', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = req.body.user;
     const photosRequest: PhotosRequest = {
       title: req.query.title as string,
       liked: req.query.liked ? req.query.liked === 'true' : undefined,
@@ -36,8 +37,7 @@ photoRouter.get('/v1/photos', authenticate, async (req: Request, res: Response, 
       take: parseInt(req.query.take as string, 10) || 10,
     };
 
-    const userId = req.body.user.id;
-    const photos = await photoService.getPhotos(userId, photosRequest);
+    const photos = await photoService.getPhotos(user.id, photosRequest);
     res.status(200).json(photos);
   } catch (error) {
     next(error);
@@ -46,9 +46,9 @@ photoRouter.get('/v1/photos', authenticate, async (req: Request, res: Response, 
 
 photoRouter.get('/v1/photos/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = req.body.user;
     const id = req.params.id;
-    const userId = req.body.user.id;
-    const photo = await photoService.getPhotoById(userId, id);
+    const photo = await photoService.getPhotoById(user.id, id);
     res.status(200).json(photo);
   } catch (error) {
     next(error);
@@ -57,9 +57,9 @@ photoRouter.get('/v1/photos/:id', authenticate, async (req: Request, res: Respon
 
 photoRouter.post('/v1/photos/:id/like', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.body.user.id;
+    const user = req.body.user;
     const photoId = req.params.id;
-    const response = await photoService.likePhoto(userId, photoId);
+    const response = await photoService.likePhoto(user.id, photoId);
     res.status(204).json(response);
   } catch (error) {
     next(error);
@@ -68,9 +68,9 @@ photoRouter.post('/v1/photos/:id/like', authenticate, async (req: Request, res: 
 
 photoRouter.delete('/v1/photos/:id/like', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.body.user.id;
+    const user = req.body.user;
     const photoId = req.params.id;
-    await photoService.unlikePhoto(userId, photoId);
+    await photoService.unlikePhoto(user.id, photoId);
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -80,6 +80,7 @@ photoRouter.delete('/v1/photos/:id/like', authenticate, async (req: Request, res
 // Private routes
 photoRouter.get('/private/v1/photos', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = req.body.user;
     const photosRequest: PhotosRequest = {
       title: req.query.title as string,
       liked: req.query.liked ? req.query.liked === 'true' : undefined,
@@ -105,8 +106,7 @@ photoRouter.get('/private/v1/photos', authenticate, async (req: Request, res: Re
       take: parseInt(req.query.take as string, 10) || 10,
     };
 
-    const userId = req.body.user.id;
-    const photos = await photoService.getPhotos(userId, photosRequest);
+    const photos = await photoService.getPhotos(user.id, photosRequest);
     res.status(200).json(photos);
   } catch (error) {
     next(error);
@@ -115,9 +115,9 @@ photoRouter.get('/private/v1/photos', authenticate, async (req: Request, res: Re
 
 photoRouter.get('/private/v1/photos/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const user = req.body.user;
     const id = req.params.id;
-    const userId = req.body.user.id;
-    const photo = await photoService.getPhotoById(userId, id);
+    const photo = await photoService.getPhotoById(user.id, id);
     res.status(200).json(photo);
   } catch (error) {
     next(error);

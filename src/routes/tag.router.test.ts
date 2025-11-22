@@ -4,6 +4,7 @@ import express, { Express } from 'express';
 import request from 'supertest';
 import { createTagRouter } from './tag.router.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
+import { ResourceType } from '../models/tag.model.js';
 
 vi.mock('../services/tag.service.js');
 
@@ -41,12 +42,16 @@ describe('Tag Router', () => {
 
   describe('POST /v1/tags', () => {
     it('should add tags successfully', async () => {
-      const newTags = { tags: [{ name: 'new-tag' }] };
+      const newTags = {
+        resourceType: ResourceType.BLOG,
+        resourceId: 'blog-1',
+        tags: ['new-tag'],
+      };
       mockTagService.addTag.mockResolvedValue({ count: 1 });
 
       const response = await request(app)
         .post('/tags/v1/tags')
-        .send({ tag: newTags });
+        .send(newTags);
 
       expect(response.status).toBe(201);
       expect(response.body).toEqual({ count: 1 });
@@ -54,23 +59,30 @@ describe('Tag Router', () => {
     });
 
     it('should return 400 if no tags provided', async () => {
-        const response = await request(app)
-            .post('/tags/v1/tags')
-            .send({ tag: { tags: [] } });
-
-        expect(response.status).toBe(400);
-        expect(response.body.error).toBe('No tags provided');
+      const response = await request(app)
+        .post('/tags/v1/tags')
+        .send({
+          resourceType: ResourceType.BLOG,
+          resourceId: 'blog-1',
+          tags: [],
+        });
+      expect(response.status).toBe(400);
+      expect(response.body.error).toBe('No tags provided');
     });
   });
 
   describe('PUT /v1/tags', () => {
     it('should update tags successfully', async () => {
-      const updatedTags = { tags: [{ name: 'updated-tag' }] };
+      const updatedTags = {
+        resourceType: ResourceType.BLOG,
+        resourceId: 'blog-1',
+        tags: ['updated-tag'],
+      };
       mockTagService.updateTag.mockResolvedValue({ count: 1 });
 
       const response = await request(app)
         .put('/tags/v1/tags')
-        .send({ tag: updatedTags });
+        .send(updatedTags);
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ count: 1 });
@@ -80,12 +92,16 @@ describe('Tag Router', () => {
 
   describe('DELETE /v1/tags', () => {
     it('should delete tags successfully', async () => {
-      const deletedTags = { tags: [{ name: 'deleted-tag' }] };
+      const deletedTags = {
+        resourceType: ResourceType.BLOG,
+        resourceId: 'blog-1',
+        tags: ['deleted-tag'],
+      };
       mockTagService.deleteTag.mockResolvedValue({ count: 1 });
 
       const response = await request(app)
         .delete('/tags/v1/tags')
-        .send({ tag: deletedTags });
+        .send(deletedTags);
 
       expect(response.status).toBe(200);
       expect(response.body).toEqual({ count: 1 });
