@@ -167,7 +167,6 @@ export class SharedUserService {
   async approveSharingRequest(userId: string, relationshipId: string): Promise<RelationshipInfoDTO> {
     this.logger.info(`Approving relationship ${relationshipId} for user ${userId}`);
     const relationship = await this.userRelationshipRepository.findById(relationshipId);
-
     if (!relationship || relationship.toUserId !== userId) {
       throw new PhotoBlogError("Incoming relationship not found or user mismatch", 404);
     }

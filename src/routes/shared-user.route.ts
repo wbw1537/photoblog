@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response, RequestHandler } from 'express';
-import { GetRelationshipsRequestDTO, SharedUserContextRequestDTO, SharedUserExchangeKeyRequest, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserValidateRequest, SessionRequestDTO } from "../models/shared-user.model.js";
+import { GetRelationshipsRequestDTO, SharedUserExchangeKeyRequest, SharedUserInitRemoteRequestDTO, SharedUserValidateRequest, SessionRequestDTO } from "../models/shared-user.model.js";
 import { SharedUserService } from "../services/shared-user.service.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
 
@@ -57,9 +57,8 @@ export function createSharedUserRouter(
   // Initiate a relationship with a remote user
   sharedUserRouter.post('/v1/shared-user/init', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
-      const sharedUserInitRequest: SharedUserInitRequestDTO = req.body;
-      const response = await sharedUserService.initiateRemoteRelationship(userId, sharedUserInitRequest);
+      const { user, ...sharedUserInitRequest } = req.body;
+      const response = await sharedUserService.initiateRemoteRelationship(user.id, sharedUserInitRequest);
       res.status(201).json(response);
     } catch (error: unknown) {
       next(error);
@@ -93,13 +92,12 @@ export function createSharedUserRouter(
   // Proxy a request to a remote user's instance
   sharedUserRouter.post('/v1/shared-user/request', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
-      const sharedUserContextRequest: SharedUserContextRequestDTO = req.body;
+      const { user, ...sharedUserContextRequest } = req.body;
       if (!sharedUserContextRequest?.requestToUserInfo?.id || !sharedUserContextRequest.requestUrl) {
         throw new PhotoBlogError("Missing required fields for proxying", 400);
       }
 
-      const response = await sharedUserService.requestSharedUser(userId, sharedUserContextRequest);
+      const response = await sharedUserService.requestSharedUser(user.id, sharedUserContextRequest);
 
       if (response && typeof response.arrayBuffer === 'function' && typeof response.headers === 'object') {
         const contentType = response.headers.get('Content-Type');
