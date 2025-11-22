@@ -3,9 +3,6 @@ import { Logger } from 'log4js';
 import crypto from 'crypto';
 
 import { SharedUserService } from './shared-user.service.js';
-import { UserRelationshipRepository } from '../repositories/user-relationship.repository.js';
-import { UserRepository } from '../repositories/user.repository.js';
-import { RemoteUserConnector } from '../connectors/remote-user.connector.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 import { generateFederatedAccessToken } from '../utils/jwt.util.js';
 import { RelationshipStatus, RelationshipType, UserType } from '@prisma/client';

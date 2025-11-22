@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TagService } from './tag.service.js';
-import { TagRepository } from '../repositories/tag.repository.js';
-import { PhotoRepository } from '../repositories/photo.repository.js';
-import { BlogRepository } from '../repositories/blog.repository.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 
 describe('TagService', () => {

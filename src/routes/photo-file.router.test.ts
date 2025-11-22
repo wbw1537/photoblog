@@ -1,17 +1,25 @@
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import express, { Express } from 'express';
 import request from 'supertest';
 import path from 'path';
 import fs from 'fs';
 import { createPhotoFileRouter } from './photo-file.router.js';
-import { PhotoFileService } from '../services/photo-file.service.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 import { FileResolution } from '../models/photo-file.model.js';
 
 vi.mock('../services/photo-file.service.js');
 
-const tempImagePath = path.join(__dirname, 'temp-test-image.jpg');
+// Use a dedicated test resources directory
+const resourcesDir = path.join(__dirname, '..', '..', '__tests__', 'resources');
+const tempImagePath = path.join(resourcesDir, 'temp-test-image.jpg');
+
+// Clean up the created file after all tests are done
+afterAll(() => {
+  if (fs.existsSync(tempImagePath)) {
+    fs.unlinkSync(tempImagePath);
+  }
+});
 
 describe('Photo File Router', () => {
   let app: Express;
@@ -21,9 +29,11 @@ describe('Photo File Router', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    if (!fs.existsSync(tempImagePath)) {
-      fs.writeFileSync(tempImagePath, 'fake image data');
+    // Ensure the resources directory and the test file exist
+    if (!fs.existsSync(resourcesDir)) {
+      fs.mkdirSync(resourcesDir, { recursive: true });
     }
+    fs.writeFileSync(tempImagePath, 'fake image data');
 
     mockPhotoFileService = {
       getPhotoFileImageById: vi.fn(),

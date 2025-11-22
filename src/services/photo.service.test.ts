@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Prisma } from '@prisma/client';
 
 import { PhotoService } from './photo.service.js';
-import { PhotoRepository } from '../repositories/photo.repository.js';
-import { TagRepository } from '../repositories/tag.repository.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 
 vi.mock('../repositories/photo.repository.js');

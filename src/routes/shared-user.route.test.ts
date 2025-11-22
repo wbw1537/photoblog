@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express, { Express } from 'express';
 import request from 'supertest';
 import { createSharedUserRouter } from './shared-user.route.js';
-import { SharedUserService } from '../services/shared-user.service.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 
 vi.mock('../services/shared-user.service.js');

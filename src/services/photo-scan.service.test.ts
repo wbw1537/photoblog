@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { v4 as uuidv4 } from 'uuid';
 
 import { PhotoScanService } from './photo-scan.service.js';
-import { ScanStatusService, JobStatusType } from './scan-status.service.js';
-import { PhotoScanJob } from '../jobs/photo-scan.job.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 
 vi.mock('uuid');

@@ -4,7 +4,6 @@ import * as crypto from 'crypto';
 vi.mock('crypto');
 
 import { PhotoFileService } from './photo-file.service.js';
-import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 import { FileResolution } from '../models/photo-file.model.js';
 import { UserType } from '@prisma/client';

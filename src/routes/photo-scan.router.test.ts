@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express, { Express } from 'express';
 import request from 'supertest';
 import { createPhotoScanRouter } from './photo-scan.router.js';
-import { PhotoScanService } from '../services/photo-scan.service.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 
 vi.mock('../services/photo-scan.service.js');

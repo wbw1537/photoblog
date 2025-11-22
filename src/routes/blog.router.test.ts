@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express, { Express } from 'express';
 import request from 'supertest';
 import { createBlogRouter } from './blog.router.js';
-import { BlogService } from '../services/blog.service.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 
 vi.mock('../services/blog.service.js');

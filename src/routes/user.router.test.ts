@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import express, { Express } from 'express';
 import request from 'supertest';
 import { createUserRouter } from './user.router.js';
-import { UserService } from '../services/user.service.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 
 // Mock the UserService
