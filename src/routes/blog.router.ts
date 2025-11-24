@@ -11,7 +11,7 @@ export function createBlogRouter(
 
   blogRouter.get('/v1/blogs', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const blogRequest: BlogRequest = {
         title: req.query.title as string || undefined,
         blogType: req.query.blogType as BlogType || undefined,
@@ -19,7 +19,7 @@ export function createBlogRouter(
         skip: parseInt(req.query.skip as string, 10) || 0,
         take: parseInt(req.query.take as string, 10) || 10
       }
-      const blogs = await blogService.getBlogs(userId, blogRequest);
+      const blogs = await blogService.getBlogs(user.id, blogRequest);
       res.status(200).json(blogs);
     } catch (error: unknown) {
       next(error);
@@ -28,9 +28,9 @@ export function createBlogRouter(
 
   blogRouter.get('/v1/blogs/:blogId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const blogId = req.params.blogId;
-      const blog = await blogService.getBlogById(userId, blogId);
+      const blog = await blogService.getBlogById(user.id, blogId);
       res.status(200).json(blog);
     } catch (error: unknown) {
       next(error);
@@ -39,10 +39,9 @@ export function createBlogRouter(
 
   blogRouter.post('/v1/blogs', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const blogCreateInput: CreateBlogDTO = req.body.blog;
-      const userId = req.body.user.id;
-      const respond = await blogService.postBlog(userId, blogCreateInput);
-      res.status(201).json(respond);
+      const { user, ...blogCreateInput } = req.body;
+      const newBlog = await blogService.postBlog(user.id, blogCreateInput);
+      res.status(201).json(newBlog);
     } catch (error: unknown) {
       next(error);
     }
@@ -51,7 +50,7 @@ export function createBlogRouter(
   // Private routes
   blogRouter.get('/private/v1/blogs', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const blogRequest: BlogRequest = {
         title: req.query.title as string || undefined,
         blogType: req.query.blogType as BlogType || undefined,
@@ -59,7 +58,7 @@ export function createBlogRouter(
         skip: parseInt(req.query.skip as string, 10) || 0,
         take: parseInt(req.query.take as string, 10) || 10
       }
-      const blogs = await blogService.getBlogs(userId, blogRequest);
+      const blogs = await blogService.getBlogs(user.id, blogRequest);
       res.status(200).json(blogs);
     } catch (error: unknown) {
       next(error);
@@ -68,9 +67,9 @@ export function createBlogRouter(
 
   blogRouter.get('/private/v1/blogs/:blogId', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const blogId = req.params.blogId;
-      const blog = await blogService.getBlogById(userId, blogId);
+      const blog = await blogService.getBlogById(user.id, blogId);
       res.status(200).json(blog);
     } catch (error: unknown) {
       next(error);

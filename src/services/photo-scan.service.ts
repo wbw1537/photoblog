@@ -20,7 +20,7 @@ export class PhotoScanService {
 
   async deltaScan(userId: string): Promise<string> {
     const jobId = this.checkJobStatus(userId);
-    this.photoScanJob.startPhotoScanJob(userId, jobId);
+    this.photoScanJob.startPhotoScanJob(userId, jobId, true);
     return jobId;
   }
 

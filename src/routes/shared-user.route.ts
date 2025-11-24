@@ -1,5 +1,5 @@
 import express, { NextFunction, Request, Response, RequestHandler } from 'express';
-import { GetRelationshipsRequestDTO, SharedUserContextRequestDTO, SharedUserExchangeKeyRequest, SharedUserInitRemoteRequestDTO, SharedUserInitRequestDTO, SharedUserValidateRequest, SessionRequestDTO } from "../models/shared-user.model.js";
+import { GetRelationshipsRequestDTO, SharedUserExchangeKeyRequest, SharedUserInitRemoteRequestDTO, SharedUserValidateRequest, SessionRequestDTO } from "../models/shared-user.model.js";
 import { SharedUserService } from "../services/shared-user.service.js";
 import { PhotoBlogError } from "../errors/photoblog.error.js";
 
@@ -22,7 +22,7 @@ export function createSharedUserRouter(
   // Get all relationships for the current user
   sharedUserRouter.get('/v1/shared-user', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const getRelationshipsRequest: GetRelationshipsRequestDTO = {
         name: req.query.name as string,
         email: req.query.email as string,
@@ -33,7 +33,7 @@ export function createSharedUserRouter(
         skip: parseInt(req.query.skip as string) || 0,
         take: parseInt(req.query.take as string) || 10,
       }
-      const sharedUsers = await sharedUserService.getSharedUsers(userId, getRelationshipsRequest);
+      const sharedUsers = await sharedUserService.getSharedUsers(user.id, getRelationshipsRequest);
       res.status(200).json(sharedUsers);
     } catch (error: unknown) {
       next(error);
@@ -57,9 +57,8 @@ export function createSharedUserRouter(
   // Initiate a relationship with a remote user
   sharedUserRouter.post('/v1/shared-user/init', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
-      const sharedUserInitRequest: SharedUserInitRequestDTO = req.body;
-      const response = await sharedUserService.initiateRemoteRelationship(userId, sharedUserInitRequest);
+      const { user, ...sharedUserInitRequest } = req.body;
+      const response = await sharedUserService.initiateRemoteRelationship(user.id, sharedUserInitRequest);
       res.status(201).json(response);
     } catch (error: unknown) {
       next(error);
@@ -69,9 +68,9 @@ export function createSharedUserRouter(
   // Approve a pending incoming relationship
   sharedUserRouter.post('/v1/shared-user/approve/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const relationshipId = req.params.id;
-      const response = await sharedUserService.approveSharingRequest(userId, relationshipId);
+      const response = await sharedUserService.approveSharingRequest(user.id, relationshipId);
       res.status(200).json(response);
     } catch (error: unknown) {
       next(error);
@@ -81,9 +80,9 @@ export function createSharedUserRouter(
   // Block an active relationship
   sharedUserRouter.post('/v1/shared-user/block/:id', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
+      const user = req.body.user;
       const relationshipId = req.params.id;
-      const response = await sharedUserService.blockRelationship(userId, relationshipId);
+      const response = await sharedUserService.blockRelationship(user.id, relationshipId);
       res.status(200).json(response);
     } catch (error: unknown) {
       next(error);
@@ -93,13 +92,12 @@ export function createSharedUserRouter(
   // Proxy a request to a remote user's instance
   sharedUserRouter.post('/v1/shared-user/request', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = req.body.user.id;
-      const sharedUserContextRequest: SharedUserContextRequestDTO = req.body;
+      const { user, ...sharedUserContextRequest } = req.body;
       if (!sharedUserContextRequest?.requestToUserInfo?.id || !sharedUserContextRequest.requestUrl) {
         throw new PhotoBlogError("Missing required fields for proxying", 400);
       }
 
-      const response = await sharedUserService.requestSharedUser(userId, sharedUserContextRequest);
+      const response = await sharedUserService.requestSharedUser(user.id, sharedUserContextRequest);
 
       if (response && typeof response.arrayBuffer === 'function' && typeof response.headers === 'object') {
         const contentType = response.headers.get('Content-Type');

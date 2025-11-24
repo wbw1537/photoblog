@@ -55,7 +55,6 @@ export class BlogService {
   }
 
   private convertCreateInput(userId: string, blogCreateInput: CreateBlogDTO): Prisma.BlogCreateInput {
-    console.log(blogCreateInput);
     // Check if the blogType instance of BlogType
     const blogType = blogCreateInput.blogType;
     if (!(blogType in BlogType)) {

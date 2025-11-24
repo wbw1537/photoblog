@@ -16,5 +16,5 @@
     "strict": true                                      /* Enable all strict type-checking options to enforce better code quality. */
   },
   "include": ["src/**/*"],                              /* Include all TypeScript files in the `src/` folder. */
-  "exclude": ["node_modules", "dist"]                   /* Exclude dependencies and output folders from compilation. */
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"] /* Exclude dependencies, output folders, and test files from compilation. */
 }

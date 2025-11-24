@@ -17,11 +17,10 @@ export function createTagRouter(
 
   tagRouter.post('/v1/tags', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const tagCreateInput: CreateTagDTO = req.body.tag;
-      const userId = req.body.user.id;
-      checkTagInput(tagCreateInput);
-      const response = await tagService.addTag(userId, tagCreateInput);
-      res.status(201).json(response);
+      const { user, ...tagRequest } = req.body;
+      checkTagInput(tagRequest);
+      const result = await tagService.addTag(user.id, tagRequest);
+      res.status(201).json(result);
     } catch (error: unknown) {
       next(error);
     }
@@ -29,11 +28,10 @@ export function createTagRouter(
 
   tagRouter.put('/v1/tags', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const tagCreateInput: CreateTagDTO = req.body.tag;
-      const userId = req.body.user.id;
-      checkTagInput(tagCreateInput);
-      const response = await tagService.updateTag(userId, tagCreateInput);
-      res.status(200).json(response);
+      const { user, ...tagRequest } = req.body;
+      checkTagInput(tagRequest);
+      const result = await tagService.updateTag(user.id, tagRequest);
+      res.status(200).json(result);
     } catch (error: unknown) {
       next(error);
     }
@@ -41,11 +39,10 @@ export function createTagRouter(
 
   tagRouter.delete('/v1/tags', authenticate, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const tagCreateInput: CreateTagDTO = req.body.tag;
-      const userId = req.body.user.id;
-      checkTagInput(tagCreateInput);
-      const response = await tagService.deleteTag(userId, tagCreateInput);
-      res.status(200).json(response);
+      const { user, ...tagRequest } = req.body;
+      checkTagInput(tagRequest);
+      const result = await tagService.deleteTag(user.id, tagRequest);
+      res.status(200).json(result);
     } catch (error: unknown) {
       next(error);
     }
