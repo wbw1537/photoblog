@@ -10,8 +10,8 @@ import { UserRelationshipRepository } from '../repositories/user-relationship.re
 
 import { AuthMiddleware } from '../middleware/auth.middleware.js';
 
-import { ConvertPhotoJob } from '../jobs/convert-photo.job.js';
 import { PhotoScanJob } from '../jobs/photo-scan.job.js';
+import { LazyPhotoProcessorPool } from '../jobs/lazy-photo-processor-pool.js';
 
 import { RemoteUserConnector } from '../connectors/remote-user.connector.js';
 
@@ -62,8 +62,17 @@ const encrypt = encryptionMiddleware.encrypt;
 
 
 // Job layer instances
-const convertPhotoJob = new ConvertPhotoJob(logger);
-const photoScanJob = new PhotoScanJob(photoRepository, userRepository, photoFileRepository, scanStatusService, convertPhotoJob, logger);
+// Lazy-initialized worker pool (creates workers on first scan, auto-terminates after 5min idle)
+const photoProcessorPool = new LazyPhotoProcessorPool(logger);
+
+const photoScanJob = new PhotoScanJob(
+  photoRepository,
+  userRepository,
+  photoFileRepository,
+  scanStatusService,
+  logger,
+  photoProcessorPool
+);
 
 // Connectors layer instances
 const remoteUserConnector = new RemoteUserConnector(logger);
@@ -89,6 +98,37 @@ const createRouters = () => ({
   sharedUserRouter: createSharedUserRouter(sharedUserService, authenticate)
 });
 
+
+// Graceful shutdown handler
+process.on('SIGTERM', async () => {
+  logger.info('SIGTERM signal received: closing application gracefully');
+  try {
+    // Terminate worker pool
+    await photoProcessorPool.forceTerminate();
+    logger.info('Worker pool terminated');
+
+    // Disconnect Prisma
+    await prismaClient.$disconnect();
+    logger.info('Database disconnected');
+
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+});
+
+process.on('SIGINT', async () => {
+  logger.info('SIGINT signal received: closing application gracefully');
+  try {
+    await photoProcessorPool.forceTerminate();
+    await prismaClient.$disconnect();
+    process.exit(0);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
+    process.exit(1);
+  }
+});
 
 // Export all initialized instances
 export {

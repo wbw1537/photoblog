@@ -43,7 +43,7 @@ export class PhotoFileService {
     if (!user.localUser?.cachePath) {
       throw new PhotoBlogError('User cache path is not configured.', 500);
     }
-    // Create a hash from the filepath to match how it's stored in ConvertPhotoJob
+    // Create a hash from the filepath to match preview storage location
     const fileHash = crypto.createHash('md5').update(photoFile.filePath).digest('hex');
     const hashPrefix = fileHash.substring(0, 2);
     
