@@ -19,6 +19,7 @@ test.ts
 .idea/
 
 .claude
+.env
 
 package-lock.json
 
