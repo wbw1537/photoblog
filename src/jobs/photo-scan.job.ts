@@ -1,7 +1,9 @@
 import fs from 'fs/promises';
 import path from 'path';
+import crypto from 'crypto';
 
-import { ExifDateTime, ExifTool, Tags } from 'exiftool-vendored';
+import sharp from 'sharp';
+import exifr from 'exifr';
 import { PhotoFile, Prisma, PhotoFileStatus } from '@prisma/client';
 import { Logger } from 'log4js';
 
@@ -9,11 +11,32 @@ import { ScanStatusService, UpdateJobStatusType } from '../services/scan-status.
 import { PhotoRepository } from '../repositories/photo.repository.js';
 import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { UserRepository } from '../repositories/user.repository.js';
-import { ConvertPhotoJob } from './convert-photo.job.js';
+import { LazyPhotoProcessorPool } from './lazy-photo-processor-pool.js';
 
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 import { placeholder, ValidatedUserForScan } from '../models/user.model.js';
-import { PhotoFileForScan } from '../models/photo-file.model.js'
+import { PhotoFileForScan } from '../models/photo-file.model.js';
+import { PhotoProcessorPool } from './photo-processor-pool.js';
+
+// exifr data structure
+interface ExifrData {
+  ISO?: number;
+  ExposureTime?: number;
+  FNumber?: number;
+  Make?: string;
+  Model?: string;
+  LensMake?: string;
+  LensModel?: string;
+  LensInfo?: string;
+  FocalLength?: number;
+  FocalLengthIn35mmFormat?: number;
+  DateTimeOriginal?: string | Date;
+  OffsetTime?: string;
+  ModifyDate?: string | Date;
+  latitude?: number;
+  longitude?: number;
+  GPSDateStamp?: string | Date;
+}
 
 interface PhotoScanDiffs {
   // Photo files in database but not in file system
@@ -30,8 +53,8 @@ export class PhotoScanJob {
     private userRepository: UserRepository,
     private photoFileRepository: PhotoFileRepository,
     private scanStatusService: ScanStatusService,
-    private convertPhotoJob: ConvertPhotoJob,
     private logger: Logger,
+    private lazyProcessorPool: LazyPhotoProcessorPool,
   ) { }
 
   async startPhotoScanJob(userId: string, jobId: string, isDeltaScan: boolean = true): Promise<void> {
@@ -39,6 +62,9 @@ export class PhotoScanJob {
       this.logger.info(`Starting photo scan job. UserId: ${userId}, JobId: ${jobId}, DeltaScan: ${isDeltaScan}`);
       const user = await this.getValidatedUser(userId);
       this.scanStatusService.initializeScanJob(user.id, jobId);
+
+      // Get worker pool (lazy initialization)
+      const processorPool = await this.lazyProcessorPool.getPool();
 
       // Compare with paths
       const photoFilesMap = new Map<string, PhotoFileForScan>();
@@ -59,12 +85,20 @@ export class PhotoScanJob {
       await this.getPhotoPathsAndCompare(user.id, user.localUser.basePath, photoScanDiffs)
 
       // Scan files
-      await this.scanPhoto(user,
+      await this.scanPhoto(
+        user,
         photoScanDiffs.increased,
         photoScanDiffs.notMatchedPhotoFilesMap,
         photoScanDiffs.matchedPhotoFilesMap,
-        isDeltaScan
+        isDeltaScan,
+        processorPool
       );
+
+      // Wait for all workers to complete
+      await processorPool.waitForCompletion();
+
+      // Release pool (starts idle timer)
+      await this.lazyProcessorPool.releasePool();
 
       // Update job status
       this.scanStatusService.completeScanJob(user.id);
@@ -72,6 +106,9 @@ export class PhotoScanJob {
     } catch (error) {
       this.logger.error(`Failed to execute photo scan job. UserId: ${userId}, JobId: ${jobId}:`, error);
       this.scanStatusService.setScanJobError(userId);
+
+      // Release pool on error too
+      await this.lazyProcessorPool.releasePool();
     }
   }
 
@@ -140,52 +177,67 @@ export class PhotoScanJob {
   }
 
   private async scanPhoto(
-    user: ValidatedUserForScan, 
+    user: ValidatedUserForScan,
     increased: string[],
     notMatched: Map<string, PhotoFileForScan>,
     matched: Map<string, PhotoFileForScan>,
-    isDeltaScan: boolean
+    isDeltaScan: boolean,
+    processorPool: PhotoProcessorPool
   ): Promise<void> {
-    const exifTool = new ExifTool({ imageHashType: 'MD5' });
-
-    await this.processIncreasedFiles(user, increased, notMatched, exifTool);
+    await this.processIncreasedFiles(user, increased, notMatched, processorPool);
     await this.processNotMatchedFiles(user, notMatched);
 
     if (!isDeltaScan) {
-      await this.processMatchedFiles(user, matched, exifTool);
+      await this.processMatchedFiles(user, matched, processorPool);
     }
-
-    exifTool.end();
   }
 
   private async processIncreasedFiles(
     user: ValidatedUserForScan,
     increased: string[],
     notMatched: Map<string, PhotoFileForScan>,
-    exifTool: ExifTool
+    processorPool: PhotoProcessorPool
   ): Promise<void> {
     this.logger.info(`Processing ${increased.length} increased files for creation`);
-    for (const filePath of increased) {
+    // Sort files by path for optimal HDD sequential reads
+    const sortedFiles = increased.sort();
+
+    for (const filePath of sortedFiles) {
       try {
-        const tags = await exifTool.read(path.join(user.localUser.basePath, filePath));
-        const matchedPhotoFile = await this.findHashMatchedPhotoFile(tags.ImageDataHash || '', notMatched);
+        const fullPath = path.join(user.localUser.basePath, filePath);
+        // SINGLE file read into buffer
+        const fileBuffer = await fs.readFile(fullPath);
+        // Compute hash from buffer (already in memory)
+        const fileHash = crypto.createHash('md5').update(fileBuffer).digest('hex');
+        // Extract EXIF from buffer with exifr
+        const exifData = await exifr.parse(fileBuffer, {
+          tiff: true,
+          exif: true,
+          gps: true,
+        });
+
+        // Get basic metadata from Sharp
+        const metadata = await sharp(fileBuffer).metadata();
+        // Check if file was moved (hash match with not matched files)
+        const matchedPhotoFile = await this.findHashMatchedPhotoFile(fileHash, notMatched);
 
         if (matchedPhotoFile !== null) {
           this.logger.debug(`Found hash match for ${filePath} -> ${matchedPhotoFile.filePath}`);
-          await Promise.all([
-            this.photoFileRepository.updateFilePathById(matchedPhotoFile.id, filePath),
-            this.convertPhotoJob.convertToPreview(user, filePath)
-          ]);
+          await this.photoFileRepository.updateFilePathById(matchedPhotoFile.id, filePath);
           notMatched.delete(matchedPhotoFile.filePath);
           this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.NOT_MATCHED_MATCHED_WITH_INCREASED);
-          continue;
+        } else {
+          // Create new photo with metadata from exifr
+          await this.createNewPhotoWithFile(user, filePath, exifData, metadata, fileHash);
+          this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.INCREASED_SCANNED);
         }
 
-        await Promise.all([
-          this.createNewPhotoWithFile(user, filePath, tags),
-          this.convertPhotoJob.convertToPreview(user, filePath)
-        ]);
-
+        // Submit to worker pool for preview generation
+        await processorPool.addTask({
+          buffer: fileBuffer,
+          outputPath: this.getPreviewPath(user, filePath),
+          filePath
+        });
       } catch (error) {
         this.logger.error(`Failed to process increased file ${filePath}:`, error);
       }
@@ -199,7 +251,7 @@ export class PhotoScanJob {
         this.logger.debug(`Deleting photo file: ${photoFile.filePath}`);
         await Promise.all([
           this.deleteNotMatchedPhotos(photoFile),
-          this.convertPhotoJob.deletePreview(user, photoFile.filePath)
+          this.deletePreview(user, photoFile.filePath)
         ]);
         this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.NOT_MATCHED_DELETED);
       } catch (error) {
@@ -211,121 +263,191 @@ export class PhotoScanJob {
   private async processMatchedFiles(
     user: ValidatedUserForScan,
     matched: Map<string, PhotoFileForScan>,
-    exifTool: ExifTool
+    processorPool: PhotoProcessorPool
   ): Promise<void> {
     this.logger.info(`Processing ${matched.size} matched files for updates`);
-    for (const [, photoFile] of matched) {
+
+    // Sort matched files for sequential HDD reads
+    const sortedMatched = Array.from(matched.values()).sort((a, b) =>
+      a.filePath.localeCompare(b.filePath)
+    );
+
+    for (const photoFile of sortedMatched) {
       try {
-        const tags = await exifTool.read(path.join(user.localUser.basePath, photoFile.filePath));
-        await this.convertPhotoJob.convertToPreview(user, photoFile.filePath)
-        if (photoFile.fileHash !== tags.ImageDataHash) {
+        const fullPath = path.join(user.localUser.basePath, photoFile.filePath);
+        // SINGLE file read into buffer
+        const fileBuffer = await fs.readFile(fullPath);
+        // Compute hash from buffer
+        const fileHash = crypto.createHash('md5').update(fileBuffer).digest('hex');
+
+        // Check if file has changed
+        if (photoFile.fileHash !== fileHash) {
           this.logger.debug(`Updating changed file: ${photoFile.filePath}`);
-          await this.updatePhotoAndFile(photoFile, tags);
+          // Extract EXIF from buffer with exifr
+          const exifData = await exifr.parse(fileBuffer, {
+            tiff: true,
+            exif: true,
+            gps: true,
+          });
+
+          // Get basic metadata from Sharp
+          const metadata = await sharp(fileBuffer).metadata();
+          // Update photo and file metadata
+          await this.updatePhotoAndFile(photoFile, exifData, metadata, fileHash);
           this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.MATCHED_UPDATED);
         }
+
+        // Regenerate preview (submit to worker pool)
+        await processorPool.addTask({
+          buffer: fileBuffer,
+          outputPath: this.getPreviewPath(user, photoFile.filePath),
+          filePath: photoFile.filePath
+        });
+
       } catch (error) {
         this.logger.error(`Failed to process matched file ${photoFile.filePath}:`, error);
       }
     }
   }
 
-  private async createNewPhotoWithFile(user: ValidatedUserForScan, filePath: string, tags: Tags): Promise<void> {
+  private async createNewPhotoWithFile(
+    user: ValidatedUserForScan,
+    filePath: string,
+    exifData: ExifrData | undefined,
+    metadata: sharp.Metadata,
+    fileHash: string
+  ): Promise<void> {
     try {
       const photo: Prisma.PhotoCreateInput = {
         user: { connect: { id: user.id } },
         title: path.basename(filePath),
-        ...this.extractPhotoMetadata(tags),
+        ...this.extractPhotoMetadata(exifData),
         files: {
-          create: this.extractFileMetadata(filePath, tags)
+          create: this.extractFileMetadata(filePath, exifData, metadata, fileHash)
         }
       };
       await this.photoRepository.create(photo);
-      this.scanStatusService.updateInProgressScanJob(user.id, UpdateJobStatusType.INCREASED_SCANNED);
     } catch (error) {
       this.logger.error(`Failed to create photo with file ${filePath}:`, error);
       throw error;
     }
   }
 
-  private async updatePhotoAndFile(photoFile: PhotoFileForScan, tags: Tags): Promise<void> {
+  private async updatePhotoAndFile(
+    photoFile: PhotoFileForScan,
+    exifData: ExifrData | undefined,
+    metadata: sharp.Metadata,
+    fileHash: string
+  ): Promise<void> {
     if (photoFile.status === PhotoFileStatus.Source) {
       const photo = await this.photoRepository.findById(photoFile.photoId);
       if (photo) {
         Object.assign(photo, {
           title: path.basename(photoFile.filePath),
-          ...this.extractPhotoMetadata(tags)
+          ...this.extractPhotoMetadata(exifData)
         });
         await this.photoRepository.update(photo);
       }
     }
-    
+
     const updatedPhotoFile: PhotoFile = {
-      ...photoFile, // spread the existing PhotoFileForScan data
-      ...this.extractFileMetadata(photoFile.filePath, tags) // add the new metadata
+      ...photoFile,
+      ...this.extractFileMetadata(photoFile.filePath, exifData, metadata, fileHash)
     } as PhotoFile;
 
     await this.photoFileRepository.update(updatedPhotoFile);
   }
 
-  private extractPhotoMetadata(tags: Tags) {
+  private extractPhotoMetadata(exifData: ExifrData | undefined) {
+    if (!exifData) {
+      return {
+        iso: null,
+        exposureTime: null,
+        exposureTimeValue: null,
+        fNumber: null,
+        cameraMake: null,
+        cameraModel: null,
+        lensMake: null,
+        lensModel: null,
+        focalLength: null,
+        focalLength35mm: null,
+        dateTaken: null,
+        timeZone: null,
+        gpsLatitude: null,
+        gpsLongitude: null,
+        gpsTimestamp: null,
+      };
+    }
+
     return {
-      iso: tags.ISO,
-      exposureTime: this.convertExposureTime(tags.ExposureTime?.toString()),
-      exposureTimeValue: tags.ExposureTime?.toString(),
-      fNumber: tags.FNumber,
-      cameraMake: tags.Make,
-      cameraModel: tags.Model,
-      lensMake: tags.LensMake,
-      lensModel: tags.LensModel,
-      focalLength: Number(tags.FocalLength?.split(' ')[0]),
-      focalLength35mm: Number(tags.FocalLengthIn35mmFormat?.split(' ')[0]),
-      dateTaken: tags.DateTimeOriginal instanceof ExifDateTime
-        ? tags.DateTimeOriginal.toDate() : null,
-      timeZone: tags.TimeZone,
-      gpsLatitude: Number(tags.GPSLatitude),
-      gpsLongitude: Number(tags.GPSLongitude),
-      gpsTimestamp: tags.GPSTimeStamp instanceof ExifDateTime
-        ? tags.GPSTimeStamp.toDate() : null,
+      iso: exifData.ISO || null,
+      exposureTime: this.convertExposureTime(exifData.ExposureTime),
+      exposureTimeValue: exifData.ExposureTime?.toString() || null,
+      fNumber: exifData.FNumber || null,
+      cameraMake: exifData.Make || null,
+      cameraModel: exifData.Model || null,
+      lensMake: exifData.LensMake || null,
+      lensModel: exifData.LensModel || exifData.LensInfo || null,
+      focalLength: exifData.FocalLength || null,
+      focalLength35mm: exifData.FocalLengthIn35mmFormat || null,
+      dateTaken: exifData.DateTimeOriginal ? new Date(exifData.DateTimeOriginal) : null,
+      timeZone: exifData.OffsetTime || null,
+      gpsLatitude: exifData.latitude || null,
+      gpsLongitude: exifData.longitude || null,
+      gpsTimestamp: exifData.GPSDateStamp ? new Date(exifData.GPSDateStamp) : null,
     };
   }
 
-  private convertExposureTime(exposureTime?: string): number | undefined {
+  private convertExposureTime(exposureTime?: number | string): number | undefined {
     if (!exposureTime) {
       return undefined;
     }
-    if (exposureTime.includes('/')) {
-      const parts = exposureTime.split('/');
-      const numerator = parseInt(parts[0], 10);
-      const denominator = parseInt(parts[1], 10);
 
-      if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
-        return numerator / denominator;
+    // exifr returns exposure time as a number
+    if (typeof exposureTime === 'number') {
+      return exposureTime;
+    }
+
+    // Handle string format (fallback)
+    if (typeof exposureTime === 'string') {
+      if (exposureTime.includes('/')) {
+        const parts = exposureTime.split('/');
+        const numerator = parseInt(parts[0], 10);
+        const denominator = parseInt(parts[1], 10);
+
+        if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
+          return numerator / denominator;
+        }
       } else {
-        throw new PhotoBlogError("Invalid fraction format or division by zero!", 400);
-      }
-    } else {
-      const number = parseInt(exposureTime, 10);
-      if (!isNaN(number)) {
-        return number;
-      } else {
-        throw new PhotoBlogError("Invalid number format!", 400);
+        const number = parseFloat(exposureTime);
+        if (!isNaN(number)) {
+          return number;
+        }
       }
     }
+
+    return undefined;
   }
 
-  private extractFileMetadata(filePath: string, tags: Tags) {
+  private extractFileMetadata(filePath: string, exifData: ExifrData | undefined, metadata: sharp.Metadata, fileHash: string) {
     return {
       fileName: path.basename(filePath),
       fileType: filePath.split('.').pop() || '',
       filePath: filePath,
-      fileHash: tags.ImageDataHash || '',
-      fileSize: tags.FileSize ? parseInt(tags.FileSize, 10) : 0,
-      fileModifiedTime: tags.FileModifyDate instanceof ExifDateTime ? tags.FileModifyDate.toDate() : new Date(tags.FileModifyDate || Date.now()),
-      fileAccessDate: tags.FileAccessDate instanceof ExifDateTime ? tags.FileAccessDate.toDate() : new Date(tags.FileAccessDate || Date.now()),
-      imageHeight: tags.ImageHeight || 0,
-      imageWidth: tags.ImageWidth || 0,
-      orientation: tags.Orientation || 0,
+      fileHash: fileHash,
+      fileSize: metadata.size || 0,
+      fileModifiedTime: exifData?.ModifyDate ? new Date(exifData.ModifyDate) : new Date(),
+      fileAccessDate: new Date(),
+      imageHeight: metadata.height || 0,
+      imageWidth: metadata.width || 0,
+      orientation: metadata.orientation || 0,
     };
+  }
+
+  private getPreviewPath(user: ValidatedUserForScan, filePath: string): string {
+    const fileHash = crypto.createHash('md5').update(filePath).digest('hex');
+    const hashPrefix = fileHash.substring(0, 2);
+    return path.join(user.localUser.cachePath, 'previews', hashPrefix, `${fileHash}.webp`);
   }
 
   private async findHashMatchedPhotoFile(
@@ -375,5 +497,24 @@ export class PhotoScanJob {
     ]);
     const ext = path.extname(filePath).toLowerCase();
     return commonExt.has(ext);
+  }
+
+  private async deletePreview(user: ValidatedUserForScan, filePath: string): Promise<void> {
+    const fileHash = crypto.createHash('md5').update(filePath).digest('hex');
+    const hashPrefix = fileHash.substring(0, 2);
+    const previewPhotoFullPath = path.join(user.localUser.cachePath, 'previews', hashPrefix, `${fileHash}.webp`);
+
+    try {
+      await fs.unlink(previewPhotoFullPath);
+      this.logger.info(`Successfully deleted preview: ${previewPhotoFullPath}`);
+    } catch (error: unknown) {
+      // Don't error if the file doesn't exist (ENOENT)
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        this.logger.error(`Error deleting preview ${previewPhotoFullPath}:`, error);
+        throw error;
+      } else {
+        this.logger.debug(`Preview file doesn't exist: ${previewPhotoFullPath}`);
+      }
+    }
   }
 }

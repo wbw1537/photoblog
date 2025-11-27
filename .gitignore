@@ -1,5 +1,6 @@
 # installed packages
 node_modules/
+.npmrc
 
 # build output
 dist/
@@ -16,6 +17,8 @@ test.ts
 
 .vscode/
 .idea/
+
+.claude
 
 package-lock.json
 
