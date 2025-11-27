@@ -79,7 +79,7 @@ const remoteUserConnector = new RemoteUserConnector(logger);
 
 // Service layer instances
 const photoScanService = new PhotoScanService(scanStatusService, photoScanJob);
-const userService = new UserService(userRepository);
+const userService = new UserService(logger, userRepository);
 const blogService = new BlogService(blogRepository, tagRepository);
 const tagService = new TagService(tagRepository, photoRepository, blogRepository);
 const photoService = new PhotoService(photoRepository, tagRepository);

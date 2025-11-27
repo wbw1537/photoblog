@@ -1,4 +1,4 @@
-import { PhotoBlogError } from "../errors/photoblog.error";
+import { PhotoBlogError } from "../errors/photoblog.error.js";
 
 export enum JobStatusType {
   INITIALIZING = 'initializing',
