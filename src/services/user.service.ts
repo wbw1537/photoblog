@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
+import { Logger } from 'log4js';
 import { CreateUserDTO, TokenResponseDTO, UserLoginResponseDTO, UserInfoDTO, PublicUserInfoDTO, ModifyUserInfoRequestDTO } from '../models/user.model.js';
 import { generateAccessToken, generateRefreshToken, shouldRenewRefreshToken, verifyToken } from '../utils/jwt.util.js';
 import { UserRepository } from '../repositories/user.repository.js';
@@ -8,6 +9,7 @@ import { UserRepository } from '../repositories/user.repository.js';
 import { PhotoBlogError } from '../errors/photoblog.error.js';
 export class UserService {
   constructor(
+    private logger: Logger,
     private userRepository: UserRepository
   ) { }
 
@@ -69,13 +71,16 @@ export class UserService {
   private async validateLoginUser(email: string, password: string) {
    const user = await this.userRepository.findLocalUserByEmail(email);
     if (!user) {
+      this.logger.error(`Login failed: User with email ${email} not found`);
       throw new PhotoBlogError('Login credential failed', 403);
     }
     if (!user.localUser) {
+      this.logger.error(`Login failed: Local user property missing for email ${email}`);
       throw new PhotoBlogError('Local user property not found', 500);
     }
     const passwordMatch = await bcrypt.compare(password, user.localUser.password);
     if (!passwordMatch) {
+      this.logger.error(`Login failed: Incorrect password for email ${email}`);
       throw new PhotoBlogError('Login credential failed', 403);
     }
     return user;

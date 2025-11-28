@@ -10,7 +10,7 @@ export class UserRepository {
 
   async findLocalUserById(id: string) {
     return await this.prismaClient.user.findUnique({
-      where: { id, type: UserType.Normal },
+      where: { id, type: { in: [UserType.Normal, UserType.Admin] } },
       include: {
         localUser: true
       }
@@ -19,7 +19,7 @@ export class UserRepository {
 
   async findLocalUserPhotosForScan(userId: string) {
     return this.prismaClient.user.findUnique({
-      where: { id: userId, type: UserType.Normal },
+      where: { id: userId, type: { in: [UserType.Normal, UserType.Admin] } },
       select: {
         id: true,
         localUser: {
@@ -69,7 +69,10 @@ export class UserRepository {
 
   async findLocalUserByEmail(email: string) {
     return await this.prismaClient.user.findUnique({
-      where: { email, type: UserType.Normal },
+      where: {
+        email,
+        type: { in: [UserType.Normal, UserType.Admin] }
+      },
       include: {
         localUser: true
       }

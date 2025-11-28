@@ -381,8 +381,8 @@ export class PhotoScanJob {
 
     return {
       iso: exifData.ISO || null,
-      exposureTime: this.convertExposureTime(exifData.ExposureTime),
-      exposureTimeValue: exifData.ExposureTime?.toString() || null,
+      exposureTime: exifData.ExposureTime || null,
+      exposureTimeValue: exifData.ExposureTime ? this.formatExposureTimeForDisplay(exifData.ExposureTime) : null,
       fNumber: exifData.FNumber || null,
       cameraMake: exifData.Make || null,
       cameraModel: exifData.Model || null,
@@ -398,35 +398,23 @@ export class PhotoScanJob {
     };
   }
 
-  private convertExposureTime(exposureTime?: number | string): number | undefined {
-    if (!exposureTime) {
-      return undefined;
+  /**
+   * Format exposure time float to user-friendly display string
+   * @param exposureTime - Exposure time in seconds as float (e.g., 0.008, 2.5)
+   * @returns Formatted string (e.g., "1/125", "2s", "2.5s")
+   */
+  private formatExposureTimeForDisplay(exposureTime: number): string {
+    // For exposure times >= 1 second, format as "Xs" (e.g., "2s", "8s", "2.5s")
+    if (exposureTime >= 1) {
+      // Round to 1 decimal place
+      const rounded = Math.round(exposureTime * 10) / 10;
+      // Remove decimal if it's a whole number
+      return rounded % 1 === 0 ? `${rounded}s` : `${rounded.toFixed(1)}s`;
     }
 
-    // exifr returns exposure time as a number
-    if (typeof exposureTime === 'number') {
-      return exposureTime;
-    }
-
-    // Handle string format (fallback)
-    if (typeof exposureTime === 'string') {
-      if (exposureTime.includes('/')) {
-        const parts = exposureTime.split('/');
-        const numerator = parseInt(parts[0], 10);
-        const denominator = parseInt(parts[1], 10);
-
-        if (!isNaN(numerator) && !isNaN(denominator) && denominator !== 0) {
-          return numerator / denominator;
-        }
-      } else {
-        const number = parseFloat(exposureTime);
-        if (!isNaN(number)) {
-          return number;
-        }
-      }
-    }
-
-    return undefined;
+    // For exposure times < 1 second, format as fraction "1/X" (e.g., "1/125", "1/500")
+    const denominator = Math.round(1 / exposureTime);
+    return `1/${denominator}`;
   }
 
   private extractFileMetadata(filePath: string, exifData: ExifrData | undefined, metadata: sharp.Metadata, fileHash: string) {
