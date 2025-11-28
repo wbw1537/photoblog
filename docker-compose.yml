@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:18-alpine
+    container_name: photoblog-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - photoblog-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - photoblog-network
+
+  # Photoblog Application
+  app:
+    image: ${DOCKER_IMAGE:-yourusername/photoblog:latest}
+    container_name: photoblog-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8000}:${PORT:-3000}"
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3000}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-1h}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - photoblog-network
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        npx prisma migrate deploy &&
+        node dist/index.js
+      "
+
+volumes:
+  photoblog-db-data:
+    driver: local
+
+networks:
+  photoblog-network:
+    driver: bridge
