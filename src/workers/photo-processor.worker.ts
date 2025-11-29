@@ -12,6 +12,7 @@ interface ProcessTask {
 interface ProcessResult {
   success: boolean;
   filePath: string;
+  outputPath?: string;
   error?: string;
 }
 
@@ -34,7 +35,8 @@ parentPort.on('message', async (task: ProcessTask) => {
 
     const result: ProcessResult = {
       success: true,
-      filePath: task.filePath
+      filePath: task.filePath,
+      outputPath: task.outputPath
     };
 
     parentPort?.postMessage(result);

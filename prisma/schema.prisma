@@ -16,6 +16,14 @@ enum PhotoFileStatus {
   Offshoot
 }
 
+// Enum for preview status
+enum PreviewStatus {
+  Pending      // Metadata extracted, preview not yet generated
+  Processing   // Worker is currently generating preview
+  Ready        // Preview available
+  Failed       // Preview generation failed
+}
+
 // Enum for blog type
 enum BlogType {
   Article
@@ -91,20 +99,21 @@ model Photo {
   focalLength35mm   Float?
   dateTaken         DateTime?
   timeZone          String?
-  gpsLatitude       Float?
-  gpsLongitude      Float?
-  gpsTimestamp      DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  files PhotoFile[]
-  tags  PhotoTag[]
+  files    PhotoFile[]
+  tags     PhotoTag[]
+  location PhotoLocation?
+
+  @@index([userId])
+  @@index([dateTaken])
 }
 
 // Photo file model
 model PhotoFile {
   id               String          @id @default(cuid())
-  photo            Photo           @relation(fields: [photoId], references: [id])
+  photo            Photo           @relation(fields: [photoId], references: [id], onDelete: Cascade)
   photoId          String
   fileName         String
   fileType         String
@@ -117,8 +126,34 @@ model PhotoFile {
   imageHeight      Int
   imageWidth       Int
   orientation      Int
+  previewStatus    PreviewStatus   @default(Pending)
+  previewPath      String?
+  previewError     String?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+
+  @@index([photoId])
+  @@index([previewStatus])
+}
+
+// Photo location model
+model PhotoLocation {
+  id        String    @id @default(cuid())
+  photo     Photo     @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  photoId   String    @unique
+  latitude  Float
+  longitude Float
+  altitude  Float?
+  timestamp DateTime?
+  country   String?
+  city      String?
+  placeName String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([latitude, longitude])
+  @@index([country])
+  @@index([city])
 }
 
 // Blog model

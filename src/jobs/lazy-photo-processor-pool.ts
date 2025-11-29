@@ -1,5 +1,6 @@
 import { Logger } from 'log4js';
 import { PhotoProcessorPool } from './photo-processor-pool.js';
+import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 import { getWorkerPoolConfig } from '../config/worker-pool.config.js';
 
 /**
@@ -12,7 +13,10 @@ export class LazyPhotoProcessorPool {
   private idleTimer: NodeJS.Timeout | null = null;
   private readonly IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
-  constructor(private logger: Logger) {}
+  constructor(
+    private photoFileRepository: PhotoFileRepository,
+    private logger: Logger
+  ) {}
 
   async getPool(): Promise<PhotoProcessorPool> {
     // Clear idle timer if exists
@@ -28,6 +32,7 @@ export class LazyPhotoProcessorPool {
       this.pool = new PhotoProcessorPool(
         config.workerCount,
         config.maxQueueSizeMB,
+        this.photoFileRepository,
         this.logger
       );
     }

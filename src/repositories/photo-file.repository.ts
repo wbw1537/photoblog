@@ -1,4 +1,4 @@
-import { PhotoFile, PrismaClient } from "@prisma/client";
+import { PhotoFile, PreviewStatus, PrismaClient } from "@prisma/client";
 
 export class PhotoFileRepository {
   constructor(
@@ -64,6 +64,36 @@ export class PhotoFileRepository {
     return await this.prismaClient.photoFile.delete({
       where: {
         id,
+      },
+    });
+  }
+
+  async updatePreviewStatusReady(filePath: string, previewPath: string): Promise<void> {
+    await this.prismaClient.photoFile.update({
+      where: { filePath },
+      data: {
+        previewStatus: PreviewStatus.Ready,
+        previewPath,
+        previewError: null,
+      },
+    });
+  }
+
+  async updatePreviewStatusFailed(filePath: string, error: string): Promise<void> {
+    await this.prismaClient.photoFile.update({
+      where: { filePath },
+      data: {
+        previewStatus: PreviewStatus.Failed,
+        previewError: error,
+      },
+    });
+  }
+
+  async updatePreviewStatusProcessing(filePath: string): Promise<void> {
+    await this.prismaClient.photoFile.update({
+      where: { filePath },
+      data: {
+        previewStatus: PreviewStatus.Processing,
       },
     });
   }
