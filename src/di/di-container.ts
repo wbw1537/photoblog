@@ -4,6 +4,7 @@ import log4js from "log4js";
 import { UserRepository } from '../repositories/user.repository.js';
 import { PhotoRepository } from '../repositories/photo.repository.js';
 import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
+import { PhotoLocationRepository } from '../repositories/photo-location.repository.js';
 import { BlogRepository } from '../repositories/blog.repository.js';
 import { TagRepository } from '../repositories/tag.repository.js';
 import { UserRelationshipRepository } from '../repositories/user-relationship.repository.js';
@@ -23,6 +24,9 @@ import { TagService } from '../services/tag.service.js';
 import { PhotoService } from '../services/photo.service.js';
 import { PhotoFileService } from '../services/photo-file.service.js';
 import { SharedUserService } from '../services/shared-user.service.js';
+import { MetadataExtractionService } from '../services/metadata-extraction.service.js';
+import { PreviewGenerationService } from '../services/preview-generation.service.js';
+import { FileProcessingService } from '../services/file-processing.service.js';
 
 import { createUserRouter } from '../routes/user.router.js';
 import { createPhotoScanRouter } from '../routes/photo-scan.router.js';
@@ -44,15 +48,19 @@ const logger = log4js.getLogger();
 // Singleton Prisma instance
 const prismaClient = new PrismaClient();
 
-// repository layer instances
+// Repository layer instances
 const userRepository = new UserRepository(prismaClient);
 const photoRepository = new PhotoRepository(prismaClient);
 const photoFileRepository = new PhotoFileRepository(prismaClient);
+const photoLocationRepository = new PhotoLocationRepository(prismaClient);
 const blogRepository = new BlogRepository(prismaClient)
 const tagRepository = new TagRepository(prismaClient);
 const userRelationshipRepository = new UserRelationshipRepository(prismaClient);
 
+// Service layer instances (core services)
 const scanStatusService = new ScanStatusService();
+const metadataExtractionService = new MetadataExtractionService(logger);
+const previewGenerationService = new PreviewGenerationService(logger);
 
 // Middleware layer instances
 const authMiddleware = new AuthMiddleware(logger);
@@ -60,15 +68,25 @@ const authenticate = authMiddleware.authenticate;
 const encryptionMiddleware = new EncryptionMiddleware();
 const encrypt = encryptionMiddleware.encrypt;
 
-
 // Job layer instances
 // Lazy-initialized worker pool (creates workers on first scan, auto-terminates after 5min idle)
-const photoProcessorPool = new LazyPhotoProcessorPool(logger);
+const photoProcessorPool = new LazyPhotoProcessorPool(photoFileRepository, logger);
+
+// File processing service (facade)
+const fileProcessingService = new FileProcessingService(
+  metadataExtractionService,
+  photoRepository,
+  photoFileRepository,
+  photoLocationRepository,
+  photoProcessorPool,
+  logger
+);
 
 const photoScanJob = new PhotoScanJob(
+  fileProcessingService,
   photoRepository,
-  userRepository,
   photoFileRepository,
+  userRepository,
   scanStatusService,
   logger,
   photoProcessorPool
@@ -103,6 +121,14 @@ const createRouters = () => ({
 process.on('SIGTERM', async () => {
   logger.info('SIGTERM signal received: closing application gracefully');
   try {
+    // Close metadata extraction service (ends exiftool process)
+    await metadataExtractionService.close();
+    logger.info('Metadata extraction service closed');
+
+    // Close preview generation service
+    await previewGenerationService.close();
+    logger.info('Preview generation service closed');
+
     // Terminate worker pool
     await photoProcessorPool.forceTerminate();
     logger.info('Worker pool terminated');
@@ -121,6 +147,8 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing application gracefully');
   try {
+    await metadataExtractionService.close();
+    await previewGenerationService.close();
     await photoProcessorPool.forceTerminate();
     await prismaClient.$disconnect();
     process.exit(0);

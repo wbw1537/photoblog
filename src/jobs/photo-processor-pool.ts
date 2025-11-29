@@ -3,6 +3,7 @@ import { EventEmitter } from 'events';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Logger } from 'log4js';
+import { PhotoFileRepository } from '../repositories/photo-file.repository.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +17,7 @@ interface ProcessTask {
 interface ProcessResult {
   success: boolean;
   filePath: string;
+  outputPath?: string;
   error?: string;
 }
 
@@ -31,6 +33,7 @@ export class PhotoProcessorPool {
   constructor(
     private workerCount: number,
     maxQueueSizeMB: number,
+    private photoFileRepository: PhotoFileRepository,
     private logger: Logger
   ) {
     this.maxQueueSize = maxQueueSizeMB * 1024 * 1024;
@@ -44,15 +47,19 @@ export class PhotoProcessorPool {
       try {
         const worker = new Worker(workerPath);
 
-        worker.on('message', (result: ProcessResult) => {
+        worker.on('message', async (result: ProcessResult) => {
           this.activeWorkers--;
 
           if (result.success) {
             this.completedTasks++;
             this.logger.debug(`Worker completed: ${result.filePath}`);
+            // Update preview status in database
+            await this.photoFileRepository.updatePreviewStatusReady(result.filePath, result.outputPath || '');
           } else {
             this.failedTasks++;
             this.logger.error(`Worker failed: ${result.filePath} - ${result.error}`);
+            // Update preview status as failed
+            await this.photoFileRepository.updatePreviewStatusFailed(result.filePath, result.error || 'Unknown error');
           }
 
           this.emitter.emit('taskComplete', result);
