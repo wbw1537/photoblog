@@ -25,7 +25,6 @@ import { PhotoService } from '../services/photo.service.js';
 import { PhotoFileService } from '../services/photo-file.service.js';
 import { SharedUserService } from '../services/shared-user.service.js';
 import { MetadataExtractionService } from '../services/metadata-extraction.service.js';
-import { PreviewGenerationService } from '../services/preview-generation.service.js';
 import { FileProcessingService } from '../services/file-processing.service.js';
 
 import { createUserRouter } from '../routes/user.router.js';
@@ -60,7 +59,6 @@ const userRelationshipRepository = new UserRelationshipRepository(prismaClient);
 // Service layer instances (core services)
 const scanStatusService = new ScanStatusService();
 const metadataExtractionService = new MetadataExtractionService(logger);
-const previewGenerationService = new PreviewGenerationService(logger);
 
 // Middleware layer instances
 const authMiddleware = new AuthMiddleware(logger);
@@ -125,10 +123,6 @@ process.on('SIGTERM', async () => {
     await metadataExtractionService.close();
     logger.info('Metadata extraction service closed');
 
-    // Close preview generation service
-    await previewGenerationService.close();
-    logger.info('Preview generation service closed');
-
     // Terminate worker pool
     await photoProcessorPool.forceTerminate();
     logger.info('Worker pool terminated');
@@ -148,7 +142,6 @@ process.on('SIGINT', async () => {
   logger.info('SIGINT signal received: closing application gracefully');
   try {
     await metadataExtractionService.close();
-    await previewGenerationService.close();
     await photoProcessorPool.forceTerminate();
     await prismaClient.$disconnect();
     process.exit(0);
