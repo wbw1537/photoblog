@@ -90,11 +90,12 @@ export class PhotoService {
       iso: buildRange(minIso, maxIso),
       exposureTime: buildRange(minExposureTime, maxExposureTime),
       dateTaken: buildDateRange(dateTakenStart, dateTakenEnd),
-      gpsLatitude: latitude !== undefined && longitude !== undefined && radius !== undefined
-        ? buildRange(latitude - radius, latitude + radius)
-        : undefined,
-      gpsLongitude: latitude !== undefined && longitude !== undefined && radius !== undefined
-        ? buildRange(longitude - radius, longitude + radius)
+      // GPS filtering now uses PhotoLocation relation
+      location: latitude !== undefined && longitude !== undefined && radius !== undefined
+        ? {
+            latitude: buildRange(latitude - radius, latitude + radius),
+            longitude: buildRange(longitude - radius, longitude + radius),
+          }
         : undefined,
       tags: tagIds.length > 0 ? { some: { tagId: { in: tagIds } } } : undefined,
     };
